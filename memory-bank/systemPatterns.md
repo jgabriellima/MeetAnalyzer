@@ -22,12 +22,19 @@ Meeting Analyzer follows a modern web application architecture with:
    Database/Storage → Transcription Providers → NLP Processing → Frontend Display
    ```
 
+4. **Internationalization Layer:**
+   - Translation files organized by locale
+   - Language detection and switching
+   - Locale-specific formatting for dates and numbers
+   - RTL support for UI components
+
 ## Key Technical Decisions
 
 ### Next.js App Router
 - Provides server-side rendering capabilities
 - Enables API routes and server components
 - Simplifies routing and navigation
+- Supports internationalized routing
 
 ### Supabase Integration
 - Handles authentication and user management
@@ -65,6 +72,14 @@ Meeting Analyzer follows a modern web application architecture with:
 - Calendar integration (Google Calendar, Outlook) for meeting management
 - Meeting platform connectors (Zoom, Meet, Teams) for automatic recording ingestion
 
+### Internationalization Strategy
+- Translation files for UI text
+- Locale-aware component rendering
+- RTL layout support
+- Date and number formatting by locale
+- Language selection persistence
+- Dynamic loading of language resources
+
 ## Design Patterns
 
 ### Provider/Adapter Pattern
@@ -92,11 +107,20 @@ Meeting Analyzer follows a modern web application architecture with:
 - Reusable UI components using Shadcn/UI
 - Consistent styling with Tailwind CSS
 - Responsive design for all device sizes
+- Internationalized components with translation support
 
 ### State Management
 - Server and client components for efficient rendering
 - Local state for UI interactions
 - Database state for persistent storage
+- Locale state for internationalization
+
+### Internationalization Pattern
+- Translation key approach with namespaces
+- Component-level translations
+- Server and client translation support
+- Locale detection and preference storage
+- Fallback language handling
 
 ## Component Relationships
 
@@ -135,6 +159,19 @@ Meeting Analyzer follows a modern web application architecture with:
    - Team performance dashboard
    - CRM opportunity connector
 
+6. **Marketing Components**
+   - Landing page with value propositions
+   - Authentication pages with benefits messaging
+   - Testimonial displays
+   - Feature highlights
+   - Pricing component
+
+7. **Internationalization Components**
+   - Language selector
+   - Locale-aware formatters
+   - Translation providers
+   - RTL layout components
+
 ### Data Model:
 - Users
 - Meetings
@@ -145,4 +182,21 @@ Meeting Analyzer follows a modern web application architecture with:
 - Comments
 - Analysis results
 - Integration connections (CRM, Calendar)
-- Team performance metrics 
+- Team performance metrics
+- User preferences (including language settings)
+
+## Implementation Progress:
+
+### Completed Components:
+- Landing page with core value propositions
+- Authentication pages with marketing copy
+- Relationship graph visualization concept
+- 4-tab interface presentation
+- Portuguese localization for key pages
+
+### In Progress Components:
+- Main application dashboard
+- Meeting details view with 4-tab interface
+- Relationship visualization implementation
+- Provider interfaces and adapters
+- Integration connectors 

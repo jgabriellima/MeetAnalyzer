@@ -114,4 +114,13 @@
 - Validate all user inputs
 - Implement proper authorization checks
 - Secure OAuth token storage
-- Isolate data between integrations 
+- Isolate data between integrations
+
+## Localization
+- Support Portuguese as the primary language
+- Use translation keys for all user-facing text
+- Maintain consistent terminology across languages
+- Format dates, times, and numbers according to locale
+- Support right-to-left languages in the UI design
+- Enable easy addition of new languages
+- Follow i18n best practices 

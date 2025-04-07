@@ -51,10 +51,8 @@ export class SassClient {
         }
     }
 
-    async uploadFile(myId: string, filename: string, file: File) {
-        filename = filename.replace(/[^0-9a-zA-Z!\-_.*'()]/g, '_');
-        filename = myId + "/" + filename
-        return this.client.storage.from('files').upload(filename, file);
+    async uploadFile(bucket: string, path: string, file: File) {
+        return this.client.storage.from(bucket).upload(path, file);
     }
 
     async getFiles(myId: string) {
@@ -86,11 +84,11 @@ export class SassClient {
         return this.client.from('todo_list').insert(row)
     }
 
-    async removeTask (id: string) {
+    async removeTask(id: number) {
         return this.client.from('todo_list').delete().eq('id', id)
     }
 
-    async updateAsDone (id: string) {
+    async updateAsDone(id: number) {
         return this.client.from('todo_list').update({done: true}).eq('id', id)
     }
 
@@ -98,5 +96,21 @@ export class SassClient {
         return this.client;
     }
 
+    async getUser() {
+        const { data, error } = await this.client.auth.getUser();
+        if (error) throw error;
+        return data.user;
+    }
 
+    async getPublicUrl(bucket: string, path: string) {
+        return {
+            data: this.client.storage.from(bucket).getPublicUrl(path).data.publicUrl
+        };
+    }
+
+    from<T extends keyof Database['public']['Tables']>(
+        table: T
+    ) {
+        return this.client.from(table);
+    }
 }

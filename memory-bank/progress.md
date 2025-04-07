@@ -1,21 +1,43 @@
 # Progress: Meeting Analyzer
 
 ## Current Status
-The Meeting Analyzer project is undergoing significant technical architecture updates to enhance flexibility and feature set. The core architecture is being redesigned to use provider/adapter patterns for external services, dynamic relationship mapping for visualization, and deeper business system integrations.
+- Core application structure (Next.js App Router) is in place.
+- Supabase integration is functional: schema defined, migrations applied, RLS policies set up, client class implemented.
+- Basic UI for listing, creating, and viewing meetings is implemented.
+- API routes for fetching meeting details and topics (mock data) are created.
+- Several critical bugs related to dependencies, async params, and database queries have been resolved.
 
 ## What Works
-- Project repository initialized
-- Basic documentation established
-- Tech stack identified
-- Development environment configuration defined
-- Provider/adapter architecture designed
-- Dynamic relationship mapping approach defined
+- Project setup and core dependencies.
+- Supabase authentication, database (with current schema), and storage.
+- Database migrations workflow.
+- Row Level Security policies for `meetings`, `accounts`, `meeting_participants`, `meeting_themes`, `meeting_comments`.
+- Unified `SassClient` for Supabase interactions.
+- Meeting creation page (`/app/meetings/new`) with file upload.
+- Basic Meeting details page (`/app/meetings/[id]`) rendering structure and fetching meeting data.
+- API route `/api/meetings/[id]/topics` responding (with mock data).
+- Navigation between meeting list, new meeting, and meeting details.
 
 ## What's Left to Build
 Prioritized by development order:
 
-### Phase 1: Provider Architecture
-- [ ] Abstract provider interfaces
+### Phase 1: Core Meeting Details Functionality
+- [ ] Fix persistent linter errors in `MeetingDetailPage` (likely cache-related).
+- [ ] Implement actual data fetching within `MeetingOverview` (replace mock topics API/data).
+- [ ] Implement actual data fetching/display within `MeetingTranscript`.
+- [ ] Implement actual data fetching/display/creation within `MeetingComments`.
+- [ ] Implement basic functionality for `MeetingChatGPT`.
+- [ ] Connect transcript search input.
+
+### Phase 2: Transcription & Analysis Integration (dependent on `Provider Architecture`)
+- [ ] Define transcription trigger mechanism (auto/manual).
+- [ ] Decide transcript storage location.
+- [ ] Implement chosen NLP service/logic for topic/theme generation.
+- [ ] Integrate transcription results into `MeetingTranscript`.
+- [ ] Integrate topic/theme results into `MeetingOverview` & database (`meeting_themes`).
+
+### Phase 3: Provider Architecture
+- [ ] Abstract provider interfaces (Transcription, NLP, etc.)
 - [ ] Provider configuration system
 - [ ] AssemblyAI adapter implementation
 - [ ] Whisper adapter implementation
@@ -23,15 +45,7 @@ Prioritized by development order:
 - [ ] Feature detection mechanism
 - [ ] Provider fallback handling
 
-### Phase 2: Dynamic Relationship Mapping
-- [ ] Topic extraction and analysis system
-- [ ] Relationship weighting algorithm
-- [ ] D3.js force-directed graph implementation
-- [ ] Interactive visualization controls
-- [ ] Cross-meeting theme discovery
-- [ ] Theme timeline visualization
-
-### Phase 3: Business System Integration
+### Phase 4: Business System Integration
 - [ ] Integration adapter interfaces
 - [ ] CRM connectors (Salesforce, Hubspot)
 - [ ] Calendar integrations (Google, Outlook)
@@ -40,7 +54,7 @@ Prioritized by development order:
 - [ ] OAuth authentication flows
 - [ ] Secure token management
 
-### Phase 4: Theme-Centric Organization
+### Phase 5: Theme-Centric Organization
 - [ ] Theme-based navigation
 - [ ] Cross-meeting theme tracking
 - [ ] Pre-meeting briefing generation
@@ -49,17 +63,19 @@ Prioritized by development order:
 - [ ] Theme-based search enhancements
 - [ ] Multilingual theme matching
 
-### Phase 5: Advanced Features
+### Phase 6: Advanced Features
 - [ ] Emotional analysis and visualization
 - [ ] Team performance dashboards
 - [ ] Communication coaching system
 - [ ] Insight recommendation engine
 - [ ] Business opportunity detection
-- [ ] Multi-lingual support
+- [ ] Multi-lingual support refinement
 - [ ] Data export and integration APIs
 
 ## Known Issues
-As the project is undergoing architectural redesign, there are no specific code issues yet, but potential challenges include:
+- Persistent (likely cache-related) linter errors for module resolution (`Cannot find module './...'`) in `src/app/app/meetings/[id]/page.tsx` despite files existing.
+- API route `/api/meetings/[id]/topics` currently returns mock data.
+- Tab components (`MeetingOverview`, `MeetingTranscript`, etc.) within the details page are not yet fetching/displaying real data.
 
 ## Potential Challenges
 - Creating consistent interfaces across diverse provider capabilities
@@ -70,20 +86,19 @@ As the project is undergoing architectural redesign, there are no specific code 
 - Implementing effective cross-language theme matching
 - Synchronizing theme-based organization with meeting-specific context
 - Handling provider rate limits and cost optimization
+- Debugging persistent linter/cache issues.
 
 ## Recent Achievements
-- Redesigned system architecture to use provider/adapter pattern
-- Developed approach for dynamic relationship mapping
-- Created framework for theme-based organization
-- Designed integration points for business systems
-- Established pre-meeting preparation feature set
-- Enhanced multilingual capabilities
+- **Database Schema & Migrations:** Successfully defined and migrated schema for core meeting features, including `accounts` and relationships.
+- **Supabase Client:** Implemented and refined the unified `SassClient`.
+- **Meeting CRUD Basics:** Enabled creation of meetings with file uploads and viewing of basic meeting details.
+- **API Structure:** Set up initial API routes for meeting data.
+- **Bug Fixes:** Resolved critical build, runtime, and Supabase query errors related to dependencies and async parameter handling.
+- **Type Safety:** Improved type safety by using `supabase gen types` and correcting type errors.
 
 ## Next Immediate Tasks
-1. Define abstract provider interfaces
-2. Implement configuration system for provider selection
-3. Create base adapter implementations
-4. Develop provider feature detection mechanism
-5. Build provider fallback system
-6. Implement topic extraction and analysis components
-7. Create relationship weighting algorithm 
+1. Attempt to resolve persistent linter errors (restart dev server/editor).
+2. Implement real data fetching and display logic for `MeetingOverview` (using topics API or direct fetch).
+3. Implement real data fetching and display logic for `MeetingTranscript`.
+4. Implement real data fetching and commenting functionality for `MeetingComments`.
+5. Define transcription trigger mechanism and storage strategy. 

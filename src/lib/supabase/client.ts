@@ -9,7 +9,7 @@ export function createSPAClient() {
     )
 }
 
-export async function createSPASassClient() {
+export function createSPASassClient() {
     const client = createSPAClient();
     return new SassClient(client, ClientType.SPA);
 }

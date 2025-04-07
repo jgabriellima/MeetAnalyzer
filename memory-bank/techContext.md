@@ -17,6 +17,9 @@
 - **Assistant UI**:
   - Custom chat interface components
 - **Analytics**: Vercel Analytics
+- **Internationalization**:
+  - next-intl for translations and localization
+  - React-intl for formatting dates, numbers, and plurals
 
 ### Backend
 - **Supabase**: Backend-as-a-Service
@@ -62,6 +65,8 @@
 - Automated translation
 - Cross-language topic matching
 - Language-specific NLP processing
+- Localized interface (Portuguese primary, English secondary)
+- Support for additional languages through translation files
 
 ## Development Setup
 
@@ -97,6 +102,10 @@ MICROSOFT_GRAPH_CLIENT_SECRET=MSGRAPHCLIENTSECRET
 
 # Default Provider Config
 DEFAULT_TRANSCRIPTION_PROVIDER=assemblyai
+
+# Localization
+DEFAULT_LOCALE=pt-BR
+SUPPORTED_LOCALES=pt-BR,en-US
 ```
 
 ### Provider Configuration
@@ -138,6 +147,11 @@ Configuration for selecting and initializing providers:
       "enabled": true,
       "autoIngest": true
     }
+  },
+  "localization": {
+    "defaultLocale": "pt-BR",
+    "supportedLocales": ["pt-BR", "en-US"],
+    "fallbackLocale": "en-US"
   }
 }
 ```
@@ -148,6 +162,7 @@ Configuration for selecting and initializing providers:
 - `npm run build` or `yarn build`: Build for production
 - `npm start` or `yarn start`: Start production server
 - `npm run lint` or `yarn lint`: Run ESLint
+- `npm run extract-messages` or `yarn extract-messages`: Extract translation strings
 
 ### Supabase Setup
 - Create Supabase project
@@ -185,6 +200,16 @@ Primary deployment platform: Vercel
 - API call optimizations
 - Caching strategies for processed transcripts
 - Background processing for relationship analysis
+- Optimized loading of translation resources
+
+### Localization Considerations
+- Support for multiple languages (Portuguese and English initially)
+- Right-to-left (RTL) language support in UI design
+- Date, time, and number formatting based on locale
+- Translation file management and updates
+- Dynamic loading of language resources
+- Handling of language-specific content (like transcriptions)
+- Maintaining consistent terminology across languages
 
 ## Dependencies
 Key dependencies include:
@@ -195,4 +220,6 @@ Key dependencies include:
 - React context providers for integration state management
 - Natural language processing libraries for topic analysis
 - UI components from @radix-ui
-- Tailwind utilities and plugins 
+- Tailwind utilities and plugins
+- next-intl for internationalization
+- react-intl for formatting dates, numbers, and plurals 

@@ -82,7 +82,7 @@ export default function SSOButtons({ onError }: SSOButtonsProps) {
             if (err instanceof Error) {
                 onError?.(err.message);
             } else {
-                onError?.('An unknown error occurred');
+                onError?.('Ocorreu um erro desconhecido');
             }
         }
     };
@@ -119,20 +119,20 @@ export default function SSOButtons({ onError }: SSOButtonsProps) {
                                 </div>
                             </div>
                             <span className="mx-auto text-sm font-semibold">
-                Continue with {config.name}
+                Continuar com {config.name}
               </span>
                         </button>
                     );
                 })}
             </div>
             <div className="mt-4 text-center text-xs text-gray-500">
-                By creating an account via selected provider, you agree to our{' '}
+                Ao criar uma conta via provedor selecionado, você concorda com nossos{' '}
                 <Link href="/legal/terms" className="text-blue-600 hover:text-blue-800 underline">
-                    Terms and Conditions
+                    Termos de Serviço
                 </Link>
-                {' '}and{' '}
+                {' '}e{' '}
                 <Link href="/legal/privacy" className="text-blue-600 hover:text-blue-800 underline">
-                    Privacy Policy
+                    Política de Privacidade
                 </Link>
             </div>
         </div>

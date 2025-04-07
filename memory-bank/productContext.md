@@ -32,6 +32,7 @@ By providing tools to capture, analyze, and extract value from meetings, this ap
 - **Multi-Modal:** Multiple ways to interact with and understand meeting content
 - **Guided Experience:** Focused onboarding with intelligent defaults over extensive configuration
 - **Business Context:** Integration with CRMs and calendar systems for contextual insights
+- **Localized Experience:** Interface available in Portuguese for Brazilian market with support for additional languages
 
 ## User Workflows
 1. **Meeting Capture:**
@@ -89,4 +90,5 @@ Meeting Analyzer stands out by:
 - Integrating with business systems like CRMs and calendars
 - Supporting communication coaching through emotional and pattern analysis
 - Offering automatic meeting ingestion from common platforms
-- Maintaining a clean, modern UI based on the Globoix design example 
+- Maintaining a clean, modern UI based on the Globoix design example
+- Providing a localized interface in Portuguese for the Brazilian market 
