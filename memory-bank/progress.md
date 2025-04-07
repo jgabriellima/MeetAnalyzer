@@ -1,104 +1,69 @@
-# Progress: Meeting Analyzer
+# Current Progress: Meeting Analyzer
 
 ## Current Status
-- Core application structure (Next.js App Router) is in place.
-- Supabase integration is functional: schema defined, migrations applied, RLS policies set up, client class implemented.
-- Basic UI for listing, creating, and viewing meetings is implemented.
-- API routes for fetching meeting details and topics (mock data) are created.
-- Several critical bugs related to dependencies, async params, and database queries have been resolved.
+The Meeting Analyzer project is in active development with the core application structure established and key features in progress. The current focus areas include:
+- Developing the meeting details page with improved layout and speaker timeline visualization
+- Implementing meeting creation flow with file upload
+- Setting up Supabase integration for authentication, database, and storage
+- Creating API routes for meeting data fetching
+- Addressing type definitions and database schema consistency
 
 ## What Works
-- Project setup and core dependencies.
-- Supabase authentication, database (with current schema), and storage.
-- Database migrations workflow.
-- Row Level Security policies for `meetings`, `accounts`, `meeting_participants`, `meeting_themes`, `meeting_comments`.
-- Unified `SassClient` for Supabase interactions.
-- Meeting creation page (`/app/meetings/new`) with file upload.
-- Basic Meeting details page (`/app/meetings/[id]`) rendering structure and fetching meeting data.
-- API route `/api/meetings/[id]/topics` responding (with mock data).
-- Navigation between meeting list, new meeting, and meeting details.
+- **Authentication Flow** - Basic sign-up and login functionality using Supabase Authentication.
+- **Database Schema** - Initial tables defined in Supabase migrations and working on local development.
+- **Unified Supabase Client** - The `SassClient` class now handles authentication, database access, and storage operations.
+- **File Upload** - Meeting recording files can be uploaded to Supabase storage.
+- **Meeting Creation** - Users can create new meetings by providing title, description, and uploading a recording file.
+- **Meeting List** - Basic list of meetings with filtering options.
+- **Meeting Details Page** - Two-column layout with:
+  - Left column: Video/audio player and speaker timeline visualization
+  - Right column: Tabs for Overview, Transcript, Comments, and ChatGPT
+- **Speaker Timeline** - Visual representation of when each participant spoke during the meeting with:
+  - Color-coded blocks for each speaker
+  - Speaking time percentages
+  - Time markers
+  - Current playback position indicator
 
 ## What's Left to Build
-Prioritized by development order:
-
-### Phase 1: Core Meeting Details Functionality
-- [ ] Fix persistent linter errors in `MeetingDetailPage` (likely cache-related).
-- [ ] Implement actual data fetching within `MeetingOverview` (replace mock topics API/data).
-- [ ] Implement actual data fetching/display within `MeetingTranscript`.
-- [ ] Implement actual data fetching/display/creation within `MeetingComments`.
-- [ ] Implement basic functionality for `MeetingChatGPT`.
-- [ ] Connect transcript search input.
-
-### Phase 2: Transcription & Analysis Integration (dependent on `Provider Architecture`)
-- [ ] Define transcription trigger mechanism (auto/manual).
-- [ ] Decide transcript storage location.
-- [ ] Implement chosen NLP service/logic for topic/theme generation.
-- [ ] Integrate transcription results into `MeetingTranscript`.
-- [ ] Integrate topic/theme results into `MeetingOverview` & database (`meeting_themes`).
-
-### Phase 3: Provider Architecture
-- [ ] Abstract provider interfaces (Transcription, NLP, etc.)
-- [ ] Provider configuration system
-- [ ] AssemblyAI adapter implementation
-- [ ] Whisper adapter implementation
-- [ ] Google Speech-to-Text adapter implementation
-- [ ] Feature detection mechanism
-- [ ] Provider fallback handling
-
-### Phase 4: Business System Integration
-- [ ] Integration adapter interfaces
-- [ ] CRM connectors (Salesforce, Hubspot)
-- [ ] Calendar integrations (Google, Outlook)
-- [ ] Meeting platform connectors
-- [ ] Automatic ingestion pipelines
-- [ ] OAuth authentication flows
-- [ ] Secure token management
-
-### Phase 5: Theme-Centric Organization
-- [ ] Theme-based navigation
-- [ ] Cross-meeting theme tracking
-- [ ] Pre-meeting briefing generation
-- [ ] Theme evolution timeline
-- [ ] Insight-based filtering and discovery
-- [ ] Theme-based search enhancements
-- [ ] Multilingual theme matching
-
-### Phase 6: Advanced Features
-- [ ] Emotional analysis and visualization
-- [ ] Team performance dashboards
-- [ ] Communication coaching system
-- [ ] Insight recommendation engine
-- [ ] Business opportunity detection
-- [ ] Multi-lingual support refinement
-- [ ] Data export and integration APIs
+- **Meeting Overview Component** - D3.js force-directed graph for topic visualization needs to be connected to actual data.
+- **Meeting Transcript Component** - Needs to fetch and display the actual transcript data with speaker information.
+- **Meeting Comments Component** - Requires implementation of comment fetching and creation functionality.
+- **Meeting ChatGPT Component** - Needs complete implementation for AI interaction.
+- **API Integration** - Replace mock data in API routes with actual processing logic.
+- **Recording Processing** - Implement transcription service integration for automated processing of uploaded recordings.
+- **Topic Extraction** - Implement NLP-based topic extraction from transcript text.
+- **Real-time Visualization** - Connect speaker timeline with actual transcript data and synchronize with media playback.
+- **User Settings** - Account settings and preferences management.
+- **Relationship Mapping** - For showing connections between meeting themes over time.
 
 ## Known Issues
-- Persistent (likely cache-related) linter errors for module resolution (`Cannot find module './...'`) in `src/app/app/meetings/[id]/page.tsx` despite files existing.
-- API route `/api/meetings/[id]/topics` currently returns mock data.
-- Tab components (`MeetingOverview`, `MeetingTranscript`, etc.) within the details page are not yet fetching/displaying real data.
+- **Linter Errors** - Persistent linter errors related to module resolution for components in `src/app/app/meetings/[id]/page.tsx`. These appear to be false positives, likely resolvable by restarting the dev server.
+- **Type Consistency** - Occasional mismatch between TypeScript types and the actual database schema, requiring manual synchronization.
+- **Playback Synchronization** - No current mechanism to synchronize the speaker timeline and transcript with the media player.
+- **Mock Data Dependencies** - Currently using mock data for API routes and timeline visualization. Need to be replaced with actual data.
 
 ## Potential Challenges
-- Creating consistent interfaces across diverse provider capabilities
-- Balancing abstract adapters with provider-specific feature extensions
-- Ensuring seamless fallback between providers
-- Managing OAuth token security and renewal for multiple integrations
-- Optimizing NLP processing for relationship mapping
-- Implementing effective cross-language theme matching
-- Synchronizing theme-based organization with meeting-specific context
-- Handling provider rate limits and cost optimization
-- Debugging persistent linter/cache issues.
+- **Database Schema Evolution** - As the application grows, managing schema changes with Supabase migrations may become complex.
+- **Performance with Large Transcripts** - Large meeting transcripts may cause performance issues in the UI, especially with the speaker timeline visualization.
+- **Authentication State Management** - Ensuring consistent user authentication state across the application.
+- **Media Processing** - Efficiently handling large audio/video files and their processing.
+- **NLP Quality** - Ensuring high-quality topic extraction and relationship mapping from transcript text.
 
 ## Recent Achievements
-- **Database Schema & Migrations:** Successfully defined and migrated schema for core meeting features, including `accounts` and relationships.
-- **Supabase Client:** Implemented and refined the unified `SassClient`.
-- **Meeting CRUD Basics:** Enabled creation of meetings with file uploads and viewing of basic meeting details.
-- **API Structure:** Set up initial API routes for meeting data.
-- **Bug Fixes:** Resolved critical build, runtime, and Supabase query errors related to dependencies and async parameter handling.
-- **Type Safety:** Improved type safety by using `supabase gen types` and correcting type errors.
+- Successfully implemented the unified Supabase client (`SassClient`) with methods for user management, file operations, and database access.
+- Created a functional meeting creation page with file upload capability.
+- Redesigned the meeting details page with a two-column layout and speaker timeline visualization.
+- Resolved critical bugs related to database schema updates and Supabase client integration.
+- Updated database migrations to align TypeScript types with the actual database schema.
 
 ## Next Immediate Tasks
-1. Attempt to resolve persistent linter errors (restart dev server/editor).
-2. Implement real data fetching and display logic for `MeetingOverview` (using topics API or direct fetch).
-3. Implement real data fetching and display logic for `MeetingTranscript`.
-4. Implement real data fetching and commenting functionality for `MeetingComments`.
-5. Define transcription trigger mechanism and storage strategy. 
+1. **Fix Linter Errors** - Resolve the persistent linter errors in `src/app/app/meetings/[id]/page.tsx`, possibly by restarting the development server or updating import paths.
+2. **Implement Real Data Fetching** - Replace mock data in the `MeetingOverview`, `MeetingTranscript`, and `MeetingComments` components with actual data fetching from API or database.
+3. **Define Transcription Trigger** - Implement the mechanism to trigger transcription processing after a recording is uploaded.
+4. **Connect Speaker Timeline** - Link the speaker timeline visualization with actual transcript data and synchronize with media playback.
+5. **Update API Routes** - Replace mock data in API routes with actual data processing logic.
+
+## Resource Needs
+- Access to a reliable transcription service API
+- NLP tools for topic extraction and relationship mapping
+- Hosting solution for the application with sufficient storage and processing capabilities 

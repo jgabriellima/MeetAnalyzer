@@ -29,6 +29,7 @@ export async function GET(
       .single();
     
     if (meetingError || !meeting) {
+      console.error("Meeting not found error:", meetingError);
       return NextResponse.json(
         { error: "Meeting not found" },
         { status: 404 }
@@ -100,7 +101,7 @@ function getMockTranscriptData() {
         id: "4",
         start: 15300,
         end: 25000,
-        text: "Agree. I've certainly heard a bit about Lantern, but I'm curious to hear your take. What makes Lantern stand out in such a crowded CRM market?",
+        text: "I've certainly heard a bit about Lantern, but I'm curious to hear your take. What makes Lantern stand out in such a crowded CRM market?",
         speakerId: "speaker_2",
         sentiment: "neutral",
         confidence: 0.94
@@ -109,10 +110,28 @@ function getMockTranscriptData() {
         id: "5",
         start: 25500,
         end: 40000,
-        text: "Absolutely, Lantern is designed to streamline all your customer relations in one easy-to-use platform. It helps you manage leads and put your customer base on autopilot by continuously managing risk and driving growth. From tracking job changes to accelerating revenue, your next best customer is already using your product. Engage them when they need you the most, with Lantern.",
+        text: "Absolutely, Lantern is designed to streamline all your customer relations in one easy-to-use platform. It helps you manage leads and put your customer base on autopilot by continuously managing risk and driving growth. From tracking job changes to accelerating revenue, your next best customer is already using your product.",
         speakerId: "speaker_3",
         sentiment: "positive",
         confidence: 0.97
+      },
+      {
+        id: "6",
+        start: 40500,
+        end: 50000,
+        text: "That sounds interesting. Can you tell me more about the pricing model? We have a team of about 50 people who would potentially use this system.",
+        speakerId: "speaker_2",
+        sentiment: "neutral",
+        confidence: 0.91
+      },
+      {
+        id: "7",
+        start: 50500,
+        end: 65000,
+        text: "Of course! Our pricing is very competitive. For a team of 50, we recommend our Business plan which is $45 per user per month, billed annually. This includes all our core features, API access, and premium support. Would you like me to arrange a live demo for your team?",
+        speakerId: "speaker_1",
+        sentiment: "positive",
+        confidence: 0.93
       },
     ],
     speakers: [

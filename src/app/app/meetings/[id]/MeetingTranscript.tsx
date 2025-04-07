@@ -14,6 +14,7 @@ export default function MeetingTranscript({ meetingId }: TranscriptProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -52,13 +53,14 @@ export default function MeetingTranscript({ meetingId }: TranscriptProps) {
     }
   };
 
-  const seekToSegment = (start: number) => {
+  const seekToSegment = (start: number, segmentId: string) => {
     if (audioRef.current) {
       audioRef.current.currentTime = start / 1000; // Convert from milliseconds to seconds
       if (!isPlaying) {
         audioRef.current.play().catch(e => console.error("Error playing audio:", e));
         setIsPlaying(true);
       }
+      setSelectedSegment(segmentId);
     }
   };
 
@@ -86,12 +88,22 @@ export default function MeetingTranscript({ meetingId }: TranscriptProps) {
     return colors[index % colors.length];
   };
 
+  const getSpeakerInitials = (speakerId?: string) => {
+    const name = getSpeakerName(speakerId);
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Calculate total duration of the recording
+  const totalDuration = segments.length > 0 
+    ? Math.max(...segments.map(seg => seg.end)) 
+    : 0;
 
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading transcript...</div>;
@@ -107,33 +119,20 @@ export default function MeetingTranscript({ meetingId }: TranscriptProps) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-100 p-4 rounded-lg mb-4">
-        <audio 
-          ref={audioRef}
-          onTimeUpdate={handleTimeUpdate}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          controls
-          className="w-full mb-2"
-          src="/api/meetings/audio/sample.mp3"
-        />
-        <div className="text-sm text-gray-500">
-          Click on any segment below to navigate to that point in the recording
-        </div>
-      </div>
-
       <div className="space-y-4">
         {segments.map((segment) => {
           const speakerColor = getSpeakerColor(segment.speakerId);
           const isActive = segment.start <= currentTime && segment.end >= currentTime;
+          const isSelected = segment.id === selectedSegment;
           
           return (
             <div 
               key={segment.id}
+              id={`segment-${segment.id}`}
               className={`p-4 rounded-lg transition-all cursor-pointer ${
-                isActive ? 'bg-blue-50 border border-blue-200' : 'bg-white hover:bg-gray-50'
+                isActive || isSelected ? 'bg-blue-50 border border-blue-200' : 'bg-white hover:bg-gray-50'
               }`}
-              onClick={() => seekToSegment(segment.start)}
+              onClick={() => seekToSegment(segment.start, segment.id)}
             >
               <div className="flex items-start mb-2">
                 <div className={`text-${speakerColor}-600 font-semibold mr-2`}>
@@ -195,7 +194,7 @@ function getMockTranscriptData() {
         id: "4",
         start: 15300,
         end: 25000,
-        text: "Agree. I've certainly heard a bit about Lantern, but I'm curious to hear your take. What makes Lantern stand out in such a crowded CRM market?",
+        text: "I've certainly heard a bit about Lantern, but I'm curious to hear your take. What makes Lantern stand out in such a crowded CRM market?",
         speakerId: "speaker_2",
         sentiment: "neutral",
         confidence: 0.94
@@ -204,10 +203,28 @@ function getMockTranscriptData() {
         id: "5",
         start: 25500,
         end: 40000,
-        text: "Absolutely, Lantern is designed to streamline all your customer relations in one easy-to-use platform. It helps you manage leads and put your customer base on autopilot by continuously managing risk and driving growth. From tracking job changes to accelerating revenue, your next best customer is already using your product. Engage them when they need you the most, with Lantern.",
+        text: "Absolutely, Lantern is designed to streamline all your customer relations in one easy-to-use platform. It helps you manage leads and put your customer base on autopilot by continuously managing risk and driving growth. From tracking job changes to accelerating revenue, your next best customer is already using your product.",
         speakerId: "speaker_3",
         sentiment: "positive",
         confidence: 0.97
+      },
+      {
+        id: "6",
+        start: 40500,
+        end: 50000,
+        text: "That sounds interesting. Can you tell me more about the pricing model? We have a team of about 50 people who would potentially use this system.",
+        speakerId: "speaker_2",
+        sentiment: "neutral",
+        confidence: 0.91
+      },
+      {
+        id: "7",
+        start: 50500,
+        end: 65000,
+        text: "Of course! Our pricing is very competitive. For a team of 50, we recommend our Business plan which is $45 per user per month, billed annually. This includes all our core features, API access, and premium support. Would you like me to arrange a live demo for your team?",
+        speakerId: "speaker_1",
+        sentiment: "positive",
+        confidence: 0.93
       },
     ],
     speakers: [
