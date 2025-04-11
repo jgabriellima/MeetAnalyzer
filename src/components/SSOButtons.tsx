@@ -25,10 +25,10 @@ const PROVIDER_CONFIGS = {
         name: 'Google',
         icon: (
             <svg viewBox="0 0 20 20" className="w-5 h-5" fill="currentColor">
-                <path d="M19.6 10.23c0-.82-.1-1.42-.25-2.05H10v3.72h5.5c-.15.96-.74 2.31-2.04 3.22v2.45h3.16c1.89-1.73 2.98-4.3 2.98-7.34z" fill="#4285F4"/>
-                <path d="M10 20c2.67 0 4.9-.89 6.57-2.43l-3.16-2.45c-.89.59-2.01.96-3.41.96-2.61 0-4.83-1.76-5.63-4.13H1.07v2.51C2.72 17.75 6.09 20 10 20z" fill="#34A853"/>
-                <path d="M4.37 11.95c-.2-.6-.31-1.24-.31-1.95s.11-1.35.31-1.95V5.54H1.07C.38 6.84 0 8.36 0 10s.38 3.16 1.07 4.46l3.3-2.51z" fill="#FBBC05"/>
-                <path d="M10 3.98c1.48 0 2.79.51 3.83 1.5l2.78-2.78C14.93 1.03 12.7 0 10 0 6.09 0 2.72 2.25 1.07 5.54l3.3 2.51C5.17 5.68 7.39 3.98 10 3.98z" fill="#EA4335"/>
+                <path d="M19.6 10.23c0-.82-.1-1.42-.25-2.05H10v3.72h5.5c-.15.96-.74 2.31-2.04 3.22v2.45h3.16c1.89-1.73 2.98-4.3 2.98-7.34z" fill="#4285F4" />
+                <path d="M10 20c2.67 0 4.9-.89 6.57-2.43l-3.16-2.45c-.89.59-2.01.96-3.41.96-2.61 0-4.83-1.76-5.63-4.13H1.07v2.51C2.72 17.75 6.09 20 10 20z" fill="#34A853" />
+                <path d="M4.37 11.95c-.2-.6-.31-1.24-.31-1.95s.11-1.35.31-1.95V5.54H1.07C.38 6.84 0 8.36 0 10s.38 3.16 1.07 4.46l3.3-2.51z" fill="#FBBC05" />
+                <path d="M10 3.98c1.48 0 2.79.51 3.83 1.5l2.78-2.78C14.93 1.03 12.7 0 10 0 6.09 0 2.72 2.25 1.07 5.54l3.3 2.51C5.17 5.68 7.39 3.98 10 3.98z" fill="#EA4335" />
             </svg>
         ),
         bgColor: 'bg-white hover:bg-gray-50',
@@ -50,7 +50,7 @@ const PROVIDER_CONFIGS = {
         name: 'Apple',
         icon: (
             <svg viewBox="0 0 20 20" className="w-5 h-5" fill="currentColor">
-                <path d="M12.44 4.33a3.63 3.63 0 00.88-2.64 3.7 3.7 0 00-2.5 1.27 3.48 3.48 0 00-.83 2.57 3.08 3.08 0 002.45-1.2zm2.1 6.2a3.76 3.76 0 011.8-3.17 3.88 3.88 0 00-3.05-1.67c-1.3-.13-2.5.76-3.2.76s-1.65-.74-2.75-.72a4.1 4.1 0 00-3.5 2.12c-1.46 2.55-.37 6.32 1.06 8.39.67 1 1.5 2.15 2.6 2.11s1.46-.69 2.73-.69 1.68.69 2.75.66 1.85-1.03 2.55-2.04a9.17 9.17 0 001.15-2.38 3.67 3.67 0 01-2.14-3.37z"/>
+                <path d="M12.44 4.33a3.63 3.63 0 00.88-2.64 3.7 3.7 0 00-2.5 1.27 3.48 3.48 0 00-.83 2.57 3.08 3.08 0 002.45-1.2zm2.1 6.2a3.76 3.76 0 011.8-3.17 3.88 3.88 0 00-3.05-1.67c-1.3-.13-2.5.76-3.2.76s-1.65-.74-2.75-.72a4.1 4.1 0 00-3.5 2.12c-1.46 2.55-.37 6.32 1.06 8.39.67 1 1.5 2.15 2.6 2.11s1.46-.69 2.73-.69 1.68.69 2.75.66 1.85-1.03 2.55-2.04a9.17 9.17 0 001.15-2.38 3.67 3.67 0 01-2.14-3.37z" />
             </svg>
         ),
         bgColor: 'bg-black hover:bg-gray-900',
@@ -97,7 +97,7 @@ export default function SSOButtons({ onError }: SSOButtonsProps) {
         <div className="mt-6">
             <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"/>
+                    <div className="w-full border-t border-gray-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
                     <span className="bg-white px-2 text-gray-500">Or continue with</span>
@@ -119,8 +119,8 @@ export default function SSOButtons({ onError }: SSOButtonsProps) {
                                 </div>
                             </div>
                             <span className="mx-auto text-sm font-semibold">
-                Continuar com {config.name}
-              </span>
+                                Continuar com {config.name}
+                            </span>
                         </button>
                     );
                 })}

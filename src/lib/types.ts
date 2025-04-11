@@ -34,6 +34,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          id: string
+          name: string
+          created_at: string
+          updated_at: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          subscription_plan: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          created_at?: string
+          updated_at?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          subscription_plan?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_at?: string
+          updated_at?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          subscription_plan?: string | null
+        }
+        Relationships: []
+      }
       meeting_comments: {
         Row: {
           content: string
@@ -202,6 +235,42 @@ export type Database = {
           },
         ]
       }
+      plan_limits: {
+        Row: {
+          id: string
+          plan_name: string
+          meetings_per_month: number
+          transcription_quality: string
+          storage_days: number
+          sentiment_analysis: boolean
+          crm_integrations: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          plan_name: string
+          meetings_per_month: number
+          transcription_quality: string
+          storage_days: number
+          sentiment_analysis?: boolean
+          crm_integrations?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          plan_name?: string
+          meetings_per_month?: number
+          transcription_quality?: string
+          storage_days?: number
+          sentiment_analysis?: boolean
+          crm_integrations?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -228,6 +297,104 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      subscription_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          subscription_id: string | null
+          event_type: string
+          event_data: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          subscription_id?: string | null
+          event_type: string
+          event_data: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          subscription_id?: string | null
+          event_type?: string
+          event_data?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          stripe_price_id: string | null
+          plan_name: string
+          status: string
+          current_period_start: string | null
+          current_period_end: string | null
+          cancel_at_period_end: boolean
+          canceled_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          stripe_price_id?: string | null
+          plan_name: string
+          status: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          stripe_price_id?: string | null
+          plan_name?: string
+          status?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       todo_list: {
         Row: {
@@ -259,6 +426,78 @@ export type Database = {
           owner?: string
           title?: string
           urgent?: boolean
+        }
+        Relationships: []
+      }
+      usage: {
+        Row: {
+          id: string
+          user_id: string
+          feature: string
+          count: number
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          feature: string
+          count?: number
+          updated_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          feature?: string
+          count?: number
+          updated_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  auth: {
+    Tables: {
+      users: {
+        Row: {
+          id: string
+          email: string
+          plan: string
+          subscription_status: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          plan?: string
+          subscription_status?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          plan?: string
+          subscription_status?: string
         }
         Relationships: []
       }

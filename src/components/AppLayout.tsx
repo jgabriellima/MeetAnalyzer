@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {usePathname, useRouter} from 'next/navigation';
 import {
@@ -9,7 +9,10 @@ import {
     X,
     ChevronDown,
     LogOut,
-    Key, Files, LucideListTodo, VideoIcon,
+    Key, Files, LucideListTodo, VideoIcon, 
+    CreditCard, 
+    Zap,
+    ArrowUpRight
 } from 'lucide-react';
 import { useGlobal } from "@/lib/context/GlobalContext";
 import { createSPASassClient } from "@/lib/supabase/client";
@@ -17,11 +20,34 @@ import { createSPASassClient } from "@/lib/supabase/client";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [isUserDropdownOpen, setUserDropdownOpen] = useState(false);
+    const [subscriptionStatus, setSubscriptionStatus] = useState<{ isActive: boolean, plan: string | null }>({ isActive: false, plan: null });
+    const [showProBanner, setShowProBanner] = useState(true);
     const pathname = usePathname();
     const router = useRouter();
 
-
     const { user } = useGlobal();
+
+    // Fetch subscription status when component mounts
+    useEffect(() => {
+        async function fetchSubscriptionStatus() {
+            try {
+                const response = await fetch('/api/subscription/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    setSubscriptionStatus({
+                        isActive: data.isActive,
+                        plan: data.plan
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching subscription status:', error);
+            }
+        }
+
+        if (user) {
+            fetchSubscriptionStatus();
+        }
+    }, [user]);
 
     const handleLogout = async () => {
         try {
@@ -49,7 +75,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         { name: 'Meetings', href: '/app/meetings', icon: VideoIcon },
         { name: 'Example Storage', href: '/app/storage', icon: Files },
         { name: 'Example Table', href: '/app/table', icon: LucideListTodo },
+        { name: 'Premium Features', href: '/app/premium-features', icon: Zap },
         { name: 'User Settings', href: '/app/user-settings', icon: User },
+        { name: 'Assinatura', href: '/app/billing', icon: CreditCard },
+        { name: 'Planos & Preços', href: '/precos', icon: Zap },
     ];
 
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
@@ -81,6 +110,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <nav className="mt-4 px-2 space-y-1">
                     {navigation.map((item) => {
                         const isActive = pathname === item.href;
+                        // Highlight the pricing link for users without active subscription
+                        const isHighlighted = item.href === '/precos' && !subscriptionStatus.isActive;
                         return (
                             <Link
                                 key={item.name}
@@ -88,15 +119,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                 className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
                                     isActive
                                         ? 'bg-primary-50 text-primary-600'
+                                        : isHighlighted
+                                        ? 'text-primary-600 bg-primary-50/50 hover:bg-primary-50'
                                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                             >
                                 <item.icon
                                     className={`mr-3 h-5 w-5 ${
-                                        isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
+                                        isActive ? 'text-primary-500' 
+                                        : isHighlighted ? 'text-primary-500'
+                                        : 'text-gray-400 group-hover:text-gray-500'
                                     }`}
                                 />
                                 {item.name}
+                                {isHighlighted && (
+                                    <span className="ml-auto text-xs bg-primary-100 text-primary-800 px-1.5 py-0.5 rounded-full">
+                                        Upgrade
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}
@@ -134,8 +174,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                     <p className="text-sm font-medium text-gray-900 truncate">
                                         {user?.email}
                                     </p>
+                                    {subscriptionStatus.isActive ? (
+                                        <div className="mt-1 flex items-center">
+                                            <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
+                                            <span className="text-xs font-medium text-green-700">
+                                                Plano {subscriptionStatus.plan || 'Pro'}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-1 flex items-center">
+                                            <span className="inline-block w-2 h-2 rounded-full bg-gray-300 mr-1.5"></span>
+                                            <span className="text-xs font-medium text-gray-500">
+                                                Plano Free
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="py-1">
+                                    <Link
+                                        href="/app/billing"
+                                        onClick={() => setUserDropdownOpen(false)}
+                                        className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                        <CreditCard className="mr-3 h-4 w-4 text-gray-400"/>
+                                        Gerenciar Assinatura
+                                    </Link>
                                     <button
                                         onClick={() => {
                                             setUserDropdownOpen(false);
@@ -161,6 +224,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         )}
                     </div>
                 </div>
+
+                {/* Upgrade banner for non-subscribers - only show on main pages */}
+                {!subscriptionStatus.isActive && showProBanner && pathname !== '/precos' && (
+                    <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white p-3 shadow-md">
+                        <div className="container mx-auto flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <Zap className="h-5 w-5" />
+                                <span>Desbloqueie recursos premium e aumente sua produtividade!</span>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                                <Link 
+                                    href="/precos" 
+                                    className="flex items-center text-sm bg-white text-primary-700 px-3 py-1 rounded-md font-medium hover:bg-primary-50"
+                                >
+                                    Ver Planos
+                                    <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                                </Link>
+                                <button 
+                                    onClick={() => setShowProBanner(false)}
+                                    className="text-white/80 hover:text-white"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <main className="p-4">
                     {children}
