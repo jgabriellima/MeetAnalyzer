@@ -1,0 +1,191 @@
+---
+description: Guia técnico para executar APIs FastAPI containerizadas no Modal Labs, utilizando imagens Docker personalizadas.
+globs: 
+alwaysApply: false
+---
+---
+title: Running Docker Images with FastAPI on Modal Labs
+description: Technical guide for running containerized FastAPI APIs on Modal Labs using custom Docker images.
+---
+
+## Overview
+
+Modal Labs is a platform that allows running Python functions in cloud containers, with native support for custom Docker images. This guide covers running containerized FastAPI APIs on Modal, detailing available approaches and best practices.
+
+---
+
+## Arquitetura e Fluxo de Execução
+
+```mermaid
+flowchart TD
+    A[Início] --> B{Imagem Docker disponível?}
+    B -- Sim --> C{Imagem pública?}
+    C -- Sim --> D[Usar Image.from_registry]
+    C -- Não --> E[Usar Image.from_registry com autenticação]
+    B -- Não --> F[Usar Image.from_dockerfile]
+    D & E & F --> G{API inicia servidor HTTP?}
+    G -- Sim --> H[Usar @modal.web_server]
+    G -- Não --> I[Usar @modal.asgi_app]
+    H & I --> J[modal deploy]
+    J --> K[API acessível via URL pública]
+```
+
+:rocket: Executando Imagens Docker com FastAPI no Modal
+1. Utilizando uma Imagem Docker Pública
+Se a imagem Docker da sua aplicação FastAPI está disponível publicamente (por exemplo, no Docker Hub), você pode utilizá-la diretamente:
+
+python
+Copiar
+Editar
+import modal
+
+image = modal.Image.from_registry("seu-usuario/sua-imagem:tag")
+
+app = modal.App("fastapi-app")
+
+@app.function(image=image)
+@modal.web_server(8000)  # Porta em que a aplicação escuta
+def iniciar_api():
+    pass  # A aplicação inicia automaticamente
+Requisitos:
+
+A imagem deve ser compatível com linux/amd64.
+
+Python 3.9 ou superior instalado e disponível como python.
+
+pip instalado corretamente.
+
+A aplicação deve escutar em 0.0.0.0 na porta especificada.
+
+2. Utilizando uma Imagem Docker Privada
+Para imagens privadas (por exemplo, AWS ECR, GCP Artifact Registry), é necessário fornecer credenciais de acesso:
+
+python
+Copiar
+Editar
+import modal
+
+secret = modal.Secret.from_name("nome-do-segredo")  # Contém as credenciais necessárias
+
+image = modal.Image.from_registry(
+    "seu-registro-privado/sua-imagem:tag",
+    secret=secret,
+    add_python="3.11"
+)
+
+app = modal.App("fastapi-app")
+
+@app.function(image=image)
+@modal.web_server(8000)
+def iniciar_api():
+    pass
+3. Construindo a Imagem a partir de um Dockerfile Local
+Se você possui um Dockerfile local, pode construir a imagem diretamente no Modal:
+
+python
+Copiar
+Editar
+import modal
+
+image = modal.Image.from_dockerfile("caminho/para/Dockerfile")
+
+app = modal.App("fastapi-app")
+
+@app.function(image=image)
+@modal.web_server(8000)
+def iniciar_api():
+    pass
+:globe_with_meridians: Expondo a API FastAPI
+1. Aplicações que Iniciam um Servidor HTTP
+Se a sua imagem Docker inicia automaticamente o servidor FastAPI (por exemplo, utilizando uvicorn), utilize o decorador @modal.web_server:
+
+python
+Copiar
+Editar
+@app.function(image=image)
+@modal.web_server(8000)
+def iniciar_api():
+    pass
+Certifique-se de que a aplicação escute em 0.0.0.0 na porta especificada.
+
+2. Definindo a Aplicação FastAPI Diretamente no Código
+Se preferir definir a aplicação FastAPI diretamente no código Python, utilize o decorador @modal.asgi_app:
+
+python
+Copiar
+Editar
+import modal
+from fastapi import FastAPI
+
+image = modal.Image.debian_slim().pip_install("fastapi[standard]")
+
+app = modal.App("fastapi-app")
+
+@app.function(image=image)
+@modal.asgi_app()
+def criar_app():
+    web_app = FastAPI()
+
+    @web_app.get("/")
+    async def raiz():
+        return {"mensagem": "Olá, mundo!"}
+
+    return web_app
+:wrench: Detalhamento de Parâmetros e Configurações
+Image.from_registry
+tag: Referência da imagem no registro (por exemplo, seu-usuario/sua-imagem:tag).
+
+secret: Objeto modal.Secret contendo credenciais para registros privados.
+
+add_python: Versão do Python a ser adicionada à imagem, se necessário.
+
+Image.from_dockerfile
+path: Caminho para o Dockerfile.
+
+add_python: Versão do Python a ser adicionada à imagem, se necessário.
+
+Decoradores
+@modal.web_server(porta): Exponha aplicações que iniciam um servidor HTTP na porta especificada.
+
+@modal.asgi_app(): Utilize para aplicações ASGI definidas no código Python.
+
+:bulb: Boas Práticas e Dicas
+Porta de Escuta: Certifique-se de que a aplicação escute em 0.0.0.0 na porta especificada para que o Modal possa encaminhar as requisições corretamente.
+
+Dependências: Utilize pip_install para adicionar dependências Python ao ambiente, garantindo que todas as bibliotecas necessárias estejam disponíveis.
+
+Segredos: Utilize modal.Secret para gerenciar credenciais de forma segura, especialmente ao acessar registros privados.
+
+Desenvolvimento Local: Utilize modal serve para testar a aplicação localmente antes de implantá-la na nuvem.
+
+Implantação: Utilize modal deploy para implantar a aplicação na nuvem e obter uma URL pública para acesso.
+
+:triangular_flag_on_post: Exemplo Completo
+python
+Copiar
+Editar
+import modal
+from fastapi import FastAPI
+
+image = modal.Image.debian_slim().pip_install("fastapi[standard]")
+
+app = modal.App("fastapi-app", image=image)
+
+@app.function()
+@modal.asgi_app()
+def criar_app():
+    web_app = FastAPI()
+
+    @web_app.get("/")
+    async def raiz():
+        return {"mensagem": "API FastAPI executando no Modal Labs!"}
+
+    return web_app
+Para implantar:
+
+bash
+Copiar
+Editar
+modal deploy nome_do_arquivo.py
+Após a implantação, o Modal fornecerá uma URL pública para acessar a API.
+

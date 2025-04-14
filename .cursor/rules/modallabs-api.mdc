@@ -1,0 +1,687 @@
+---
+description: A comprehensive guide for integrating and operating with Modal Labs for high-performance serverless computing
+globs: 
+alwaysApply: false
+---
+---
+title: Modal Labs - Complete API Use Guide
+description: A comprehensive guide for integrating and operating with Modal Labs for high-performance serverless computing, with focus on ML/AI workloads and batch processing.
+---
+
+```mermaid
+flowchart TD
+    A[Input Source] --> B[Modal Stub]
+    B --> C1[GPU Functions]
+    B --> C2[CPU Functions]
+    B --> C3[Memory-Optimized]
+    C1 --> D1[ML Processing]
+    C1 --> D2[Transcription]
+    C2 --> D3[NLP Tasks]
+    C2 --> D4[Batch Jobs]
+    C3 --> D5[Large Data Processing]
+    D1 --> E[Results]
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    D5 --> E
+```
+
+## 📦 Overview
+Modal Labs provides a powerful serverless computing platform optimized for:
+- ML/AI workloads with GPU support
+- Batch processing with automatic scaling
+- High-memory computing tasks
+- Long-running background jobs
+- Real-time API endpoints
+
+Key features:
+- Automatic container management
+- GPU instance provisioning
+- Memory optimization
+- Function-level scaling
+- Built-in monitoring
+- Cost optimization
+
+## ✅ Setup & Configuration
+
+### Basic Setup
+```bash
+pip install modal
+modal token new
+```
+
+### Environment Configuration
+```python
+import os
+import modal
+
+# Load environment variables
+modal.Secret({
+    "ASSEMBLYAI_API_KEY": os.environ["ASSEMBLYAI_API_KEY"],
+    "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"]
+})
+```
+
+## 🎯 Core Concepts
+
+### Stub Definition
+```python
+import modal
+
+stub = modal.Stub("meeting-analyzer")
+
+# Define container image
+image = modal.Image.debian_slim().pip_install([
+    "assemblyai",
+    "transformers",
+    "torch",
+    "numpy"
+])
+```
+
+### Function Types
+
+1. **GPU Functions**
+```python
+@stub.function(
+    gpu="A10G",
+    memory=16384,
+    timeout=3600,
+    image=image
+)
+def process_ml_task():
+    pass
+```
+
+2. **CPU Functions**
+```python
+@stub.function(
+    cpu=2,
+    memory=4096,
+    timeout=1800,
+    image=image
+)
+def process_nlp_task():
+    pass
+```
+
+3. **Memory-Optimized Functions**
+```python
+@stub.function(
+    memory=32768,
+    timeout=7200,
+    image=image
+)
+def process_large_data():
+    pass
+```
+
+## 🌐 Web Endpoints & API Integration
+
+### FastAPI Integration
+
+Qualquer função Modal pode ser exposta como um endpoint HTTP usando o decorador `@modal.fastapi_endpoint()`:
+
+```python
+# src/modal_functions/api.py
+import modal
+from fastapi import FastAPI, Request
+from typing import Dict, Any
+
+stub = modal.Stub("meeting-analyzer")
+image = modal.Image.debian_slim().pip_install("fastapi[standard]")
+
+# Endpoint simples
+@stub.function(image=image)
+@modal.fastapi_endpoint()
+def healthcheck():
+    return {"status": "healthy"}
+
+# Endpoint com parâmetros
+@stub.function(image=image)
+@modal.fastapi_endpoint()
+def process_audio(audio_url: str):
+    return {"status": "processing", "url": audio_url}
+
+# Endpoint POST com corpo JSON
+@stub.function(image=image)
+@modal.fastapi_endpoint(method="POST")
+def process_meeting(request_data: Dict[str, Any]):
+    return {
+        "status": "processing",
+        "meeting_id": request_data["meeting_id"]
+    }
+
+# Endpoint com autenticação
+@stub.function(
+    image=image,
+    secrets=[modal.Secret.from_name("api-auth-token")]
+)
+@modal.fastapi_endpoint()
+async def secure_endpoint(request: Request):
+    token = request.headers.get("Authorization")
+    if token != f"Bearer {os.environ['AUTH_TOKEN']}":
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token"
+        )
+    return {"status": "authenticated"}
+```
+
+### URLs dos Endpoints
+
+Após o deploy, cada função decorada com `@modal.fastapi_endpoint()` recebe uma URL única:
+
+```bash
+# Development
+modal serve ./src/modal_functions/api.py
+# Output: https://your-org--app-name-function-name-dev.modal.run
+
+# Production
+modal deploy ./src/modal_functions/api.py
+# Output: https://your-org--app-name-function-name.modal.run
+```
+
+### Padrões de Uso
+
+1. **Endpoint Síncrono**:
+```python
+@stub.function(image=image)
+@modal.fastapi_endpoint(method="POST")
+def sync_process(data: Dict[str, Any]):
+    result = process_data(data)
+    return {"result": result}
+```
+
+2. **Endpoint Assíncrono com Job**:
+```python
+@stub.function(image=image)
+@modal.fastapi_endpoint(method="POST")
+async def async_process(data: Dict[str, Any]):
+    # Inicia job em background
+    job = process_data.spawn(data)
+    return {
+        "job_id": job.object_id,
+        "status": "processing"
+    }
+```
+
+3. **Endpoint com Validação**:
+```python
+from pydantic import BaseModel
+
+class AudioRequest(BaseModel):
+    url: str
+    language: str = "en"
+    model: str = "base"
+
+@stub.function(image=image)
+@modal.fastapi_endpoint(method="POST")
+def process_audio(request: AudioRequest):
+    return {
+        "status": "processing",
+        "config": request.dict()
+    }
+```
+
+### Integração com Frontend
+
+```typescript
+// src/lib/modal-api.ts
+export async function callModalEndpoint(endpoint: string, data: any) {
+    const MODAL_BASE_URL = process.env.NEXT_PUBLIC_MODAL_API_URL;
+    
+    const response = await fetch(`${MODAL_BASE_URL}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.MODAL_API_TOKEN}`
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Modal API error: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// Uso no componente
+const processAudio = async (audioUrl: string) => {
+    try {
+        const result = await callModalEndpoint('process_audio', {
+            url: audioUrl,
+            language: 'en'
+        });
+        return result;
+    } catch (error) {
+        console.error('Modal API error:', error);
+        throw error;
+    }
+};
+```
+
+### Considerações de Performance
+
+1. **Cold Start**:
+- Primeira chamada pode levar alguns segundos
+- Container fica warm por um período após uso
+- Use `@modal.concurrent` para múltiplas requisições no mesmo container
+
+2. **Scaling**:
+```python
+@stub.function(image=image)
+@modal.concurrent(max_inputs=1000)  # Permite até 1000 requisições simultâneas
+@modal.fastapi_endpoint()
+def scalable_endpoint():
+    return {"status": "processing"}
+```
+
+3. **Timeouts**:
+```python
+@stub.function(
+    image=image,
+    timeout=300  # 5 minutos
+)
+@modal.fastapi_endpoint()
+def long_running_endpoint():
+    # Processamento longo
+    pass
+```
+
+### Monitoramento de Endpoints
+
+```python
+@stub.function(image=image)
+@modal.fastapi_endpoint()
+def metrics():
+    return {
+        "requests": modal.metrics.counter("endpoint_requests"),
+        "latency": modal.metrics.histogram("endpoint_latency"),
+        "errors": modal.metrics.counter("endpoint_errors")
+    }
+```
+
+### Segurança dos Endpoints
+
+1. **Autenticação via Token**:
+```python
+@stub.function(
+    image=image,
+    secrets=[modal.Secret.from_name("api-keys")]
+)
+@modal.fastapi_endpoint()
+def secure_endpoint(request: Request):
+    validate_auth_token(request.headers.get("Authorization"))
+    return {"status": "authenticated"}
+```
+
+2. **Rate Limiting**:
+```python
+from fastapi import HTTPException
+
+@stub.function(image=image)
+@modal.fastapi_endpoint()
+def rate_limited_endpoint(request: Request):
+    if not check_rate_limit(request.client.host):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests"
+        )
+    return {"status": "ok"}
+```
+
+## 🚦 Execution & Infrastructure Integration
+
+### Local Development Execution
+```bash
+# Direct execution of a function
+modal run ./src/modal_functions/transcription.py --audio_url "https://example.com/audio.mp3"
+
+# Running with specific parameters
+modal run -m src.modal_functions.transcription --function process_audio --args '{"url": "https://example.com/audio.mp3"}'
+
+# Development server for API endpoints
+modal serve ./src/modal_functions/api.py
+```
+
+### Production Deployment & Execution
+```python
+# src/modal_functions/transcription.py
+import modal
+
+stub = modal.Stub("meeting-analyzer")
+
+@stub.function(
+    gpu="A10G",
+    memory=16384,
+    timeout=3600,
+    image=image
+)
+def process_audio(url: str):
+    # Implementation
+    pass
+
+# Deployment endpoint
+@stub.function()
+@modal.web_endpoint(method="POST")
+async def process_meeting():
+    # Implementation
+    pass
+
+# To deploy:
+# modal deploy ./src/modal_functions/transcription.py
+```
+
+### Infrastructure Integration
+
+```mermaid
+flowchart TD
+    A[Next.js Frontend] --> B[Edge Functions]
+    B --> C[Modal Functions]
+    C --> D1[AssemblyAI Processing]
+    C --> D2[NLP Processing]
+    C --> D3[Batch Processing]
+    D1 --> E[Results]
+    D2 --> E
+    D3 --> E
+    E --> F[Supabase Storage]
+```
+
+#### Execution Patterns
+
+1. **Direct API Integration**
+```typescript
+// Frontend API call
+async function processMeeting(audioUrl: string) {
+    const response = await fetch('/api/process-meeting', {
+        method: 'POST',
+        body: JSON.stringify({ audioUrl })
+    });
+    return await response.json();
+}
+```
+
+2. **Background Job Processing**
+```python
+# Modal function
+@stub.function(
+    gpu="A10G",
+    memory=16384,
+    timeout=3600
+)
+async def process_meeting_background(meeting_id: str):
+    # 1. Fetch meeting data
+    # 2. Process with AssemblyAI
+    # 3. Run NLP analysis
+    # 4. Store results
+    pass
+
+# Edge function trigger
+async def trigger_processing(meeting_id: str):
+    process_meeting_background.spawn(meeting_id)
+```
+
+3. **Batch Processing Integration**
+```python
+@stub.function(
+    cpu=4,
+    memory=8192,
+    timeout=7200
+)
+def process_meetings_batch(meeting_ids: List[str]):
+    return modal.map(process_meeting_background, meeting_ids, order=True)
+
+# Edge function trigger
+async def trigger_batch_processing(meeting_ids: List[str]):
+    process_meetings_batch.spawn(meeting_ids)
+```
+
+#### Directory Structure
+```
+src/
+├── modal_functions/
+│   ├── __init__.py
+│   ├── config.py          # Configuration and environment setup
+│   ├── transcription.py   # AssemblyAI integration
+│   ├── nlp.py            # NLP processing functions
+│   ├── batch.py          # Batch processing handlers
+│   └── api.py            # Web endpoints
+├── edge_functions/
+│   └── process-meeting.ts # Edge function handler
+└── providers/
+    ├── modal.ts          # Modal client integration
+    └── types.ts          # Shared types
+```
+
+#### Environment Configuration
+```bash
+# .env.production
+MODAL_TOKEN_ID=prod_token_id
+MODAL_TOKEN_SECRET=prod_token_secret
+ASSEMBLYAI_API_KEY=your_api_key
+```
+
+#### Deployment Flow
+1. **Development**:
+   ```bash
+   # Start development server
+   modal serve ./src/modal_functions/api.py
+   ```
+
+2. **Staging**:
+   ```bash
+   # Deploy to staging environment
+   MODAL_ENVIRONMENT=staging modal deploy ./src/modal_functions/api.py
+   ```
+
+3. **Production**:
+   ```bash
+   # Deploy to production
+   MODAL_ENVIRONMENT=production modal deploy ./src/modal_functions/api.py
+   ```
+
+#### Health Checks & Monitoring
+
+```python
+@stub.function()
+@modal.web_endpoint()
+def health():
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "environment": os.environ.get("MODAL_ENVIRONMENT", "development")
+    }
+
+@stub.function()
+@modal.web_endpoint()
+def monitor():
+    return {
+        "cpu_usage": get_cpu_metrics(),
+        "memory_usage": get_memory_metrics(),
+        "active_containers": get_container_count()
+    }
+```
+
+## 📊 Error Codes & Troubleshooting
+
+Common error codes and their meanings:
+
+| Code | Description | Solution |
+|------|-------------|----------|
+| `RESOURCE_EXCEEDED` | Container exceeded memory/CPU limits | Increase resource allocation |
+| `TIMEOUT` | Function execution timed out | Adjust timeout or optimize code |
+| `NETWORK_ERROR` | Network connectivity issues | Check network configuration |
+| `GPU_UNAVAILABLE` | GPU resources not available | Try different GPU type or wait |
+| `COLD_START` | Container cold start delay | Use warm-up strategies |
+
+## 🚀 Performance Tips
+
+1. **Container Optimization**:
+   - Use appropriate base images
+   - Minimize dependencies
+   - Implement caching strategies
+
+2. **Resource Allocation**:
+   - Right-size memory and CPU
+   - Use GPU only when needed
+   - Implement proper scaling
+
+3. **Cost Optimization**:
+   - Use spot instances when possible
+   - Implement proper cleanup
+   - Monitor resource usage
+
+## 📚 References
+
+- ](hom/ce](https://modal.com/docs/reference)
+- [Examples Repository](mdc:https:/github.com/modal-labs/modal-examples)
+
+## 🔄 Fluxo de Desenvolvimento e Execução
+
+### Visão Geral do Fluxo
+```mermaid
+flowchart TD
+    subgraph "Fase de Desenvolvimento"
+        A1[Desenvolvimento das Funções Modal] --> A2[Deploy das Funções]
+        A2 --> A3[Geração de URLs dos Endpoints]
+    end
+    
+    subgraph "Fase de Execução (Runtime)"
+        B1[Cliente/Frontend] --> B2[Chamada HTTP]
+        B2 --> B3[Modal Endpoint]
+        B3 --> B4[Processamento]
+        B4 --> B5[Resposta]
+    end
+    
+    A3 --> B3
+```
+
+### 1. Fase de Desenvolvimento
+Durante o desenvolvimento, você:
+1. Desenvolve as funções Modal em Python
+2. Faz o deploy dessas funções usando o CLI do Modal
+3. Recebe URLs únicas para cada endpoint
+
+```python
+# src/modal_functions/api.py
+import modal
+
+stub = modal.Stub("meeting-analyzer")
+
+@stub.function()
+@modal.fastapi_endpoint(method="POST")
+def process_audio(audio_data: dict):
+    # Implementação do processamento
+    return {"status": "success"}
+
+# Deploy via CLI:
+# modal deploy ./src/modal_functions/api.py
+# Output: https://your-org--meeting-analyzer-process-audio.modal.run
+```
+
+### 2. Fase de Execução (Runtime)
+Durante a execução da aplicação, você:
+1. Usa as URLs geradas para fazer chamadas HTTP
+2. Não precisa do CLI ou SDK Python do Modal
+3. Interage apenas via HTTP com os endpoints deployados
+
+```typescript
+// src/app/api/process-meeting/route.ts
+export async function POST(request: Request) {
+    const MODAL_ENDPOINT = process.env.MODAL_PROCESS_AUDIO_URL;
+    
+    try {
+        const response = await fetch(MODAL_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.MODAL_API_TOKEN}`
+            },
+            body: JSON.stringify(await request.json())
+        });
+        
+        return Response.json(await response.json());
+    } catch (error) {
+        return Response.error();
+    }
+}
+```
+
+### Benefícios desta Abordagem
+1. **Separação Clara**:
+   - Desenvolvimento e deploy são feitos offline
+   - Runtime apenas consome endpoints HTTP
+   - Não precisa do SDK Python em produção
+
+2. **Simplicidade**:
+   - Frontend não precisa conhecer Modal
+   - Interação via HTTP padrão
+   - Fácil integração com qualquer linguagem/framework
+
+3. **Segurança**:
+   - Tokens e configurações sensíveis ficam no Modal
+   - Frontend só precisa do token de autenticação
+   - Menor superfície de ataque
+
+### Exemplo de Fluxo Completo
+
+1. **Setup Inicial (Uma vez)**:
+```bash
+# Desenvolvimento
+modal deploy ./src/modal_functions/api.py
+
+# Guardar URLs geradas
+MODAL_PROCESS_AUDIO_URL=https://your-org--meeting-analyzer-process-audio.modal.run
+MODAL_PROCESS_TEXT_URL=https://your-org--meeting-analyzer-process-text.modal.run
+```
+
+2. **Uso em Produção**:
+```typescript
+// Frontend/Cliente
+async function processAudio(audioFile: File) {
+    // 1. Upload do arquivo
+    const uploadUrl = await getUploadUrl(audioFile);
+    
+    // 2. Chamada ao endpoint Modal
+    const response = await fetch('/api/process-audio', {
+        method: 'POST',
+        body: JSON.stringify({ url: uploadUrl })
+    });
+    
+    // 3. Acompanhamento do processamento
+    const { jobId } = await response.json();
+    return jobId;
+}
+
+// Edge Function
+async function processAudioHandler(req: Request) {
+    // Chama o endpoint Modal deployado
+    const result = await fetch(process.env.MODAL_PROCESS_AUDIO_URL, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${process.env.MODAL_API_TOKEN}`
+        },
+        body: JSON.stringify(req.body)
+    });
+    
+    return result.json();
+}
+```
+
+### Melhores Práticas
+1. **Gestão de URLs**:
+   - Armazene URLs dos endpoints em variáveis de ambiente
+   - Use diferentes URLs para dev/staging/prod
+   - Mantenha um registro das URLs deployadas
+
+2. **Versionamento**:
+   - Versione suas funções Modal
+   - Faça deploy com tags de versão
+   - Mantenha compatibilidade entre versões
+
+3. **Monitoramento**:
+   - Use os endpoints de health check
+   - Monitore latência e erros
+   - Configure alertas para falhas 

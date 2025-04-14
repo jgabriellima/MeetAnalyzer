@@ -10,10 +10,159 @@ export class SassClient {
     private client: SupabaseClient<Database>;
     private clientType: ClientType;
 
-    constructor(client: SupabaseClient, clientType: ClientType) {
+    constructor(client: SupabaseClient<Database>, clientType: ClientType) {
         this.client = client;
         this.clientType = clientType;
+    }
 
+    // Auth methods
+    get auth() {
+        return this.client.auth;
+    }
+
+    // Storage methods
+    get storage() {
+        return this.client.storage;
+    }
+
+    // Database methods
+    from<T extends keyof Database['public']['Tables']>(
+        table: T
+    ) {
+        return this.client.from(table);
+    }
+
+    // Realtime methods
+    get realtime() {
+        return this.client.realtime;
+    }
+
+    // Helper methods for transcription
+    async getMeeting(id: string) {
+        const { data, error } = await this.from('meetings')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async updateMeetingTranscriptionStatus(
+        id: string,
+        status: string,
+        error?: string
+    ) {
+        const { data, error: updateError } = await this.from('meetings')
+            .update({
+                transcription_status: status,
+                transcription_error: error,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+        return data;
+    }
+
+    async getTranscriptionSegments(meetingId: string) {
+        const { data, error } = await this.from('transcription_segments')
+            .select('*')
+            .eq('meeting_id', meetingId)
+            .order('start_time', { ascending: true });
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getTranscriptionMetadata(meetingId: string, type?: string) {
+        const query = this.from('transcription_metadata')
+            .select('*')
+            .eq('meeting_id', meetingId);
+
+        if (type) {
+            query.eq('metadata_type', type);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getTranscriptionSpeakers(meetingId: string) {
+        const { data, error } = await this.from('transcription_speakers')
+            .select('*')
+            .eq('meeting_id', meetingId);
+
+        if (error) throw error;
+        return data;
+    }
+
+    async upsertTranscriptionSegments(
+        meetingId: string,
+        segments: Array<{
+            speaker_id?: string;
+            start_time: number;
+            end_time: number;
+            text: string;
+            confidence?: number;
+        }>
+    ) {
+        const { data, error } = await this.from('transcription_segments')
+            .upsert(
+                segments.map(segment => ({
+                    meeting_id: meetingId,
+                    ...segment,
+                    created_at: new Date().toISOString()
+                }))
+            )
+            .select();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async upsertTranscriptionMetadata(
+        meetingId: string,
+        type: string,
+        data: any
+    ) {
+        const { data: result, error } = await this.from('transcription_metadata')
+            .upsert({
+                meeting_id: meetingId,
+                metadata_type: type,
+                data,
+                created_at: new Date().toISOString()
+            })
+            .select();
+
+        if (error) throw error;
+        return result;
+    }
+
+    async upsertTranscriptionSpeakers(
+        meetingId: string,
+        speakers: Array<{
+            speaker_id: string;
+            speaker_name?: string;
+            speaking_time?: number;
+        }>
+    ) {
+        const { data, error } = await this.from('transcription_speakers')
+            .upsert(
+                speakers.map(speaker => ({
+                    meeting_id: meetingId,
+                    ...speaker,
+                    created_at: new Date().toISOString()
+                }))
+            )
+            .select();
+
+        if (error) throw error;
+        return data;
     }
 
     async loginEmail(email: string, password: string) {
@@ -69,7 +218,6 @@ export class SassClient {
         return this.client.storage.from('files').createSignedUrl(filename, timeInSec, {
             download: forDownload
         });
-
     }
 
     async getMyTodoList(page: number = 1, pageSize: number = 100, order: string = 'created_at', done: boolean | null = false) {
@@ -106,11 +254,5 @@ export class SassClient {
         return {
             data: this.client.storage.from(bucket).getPublicUrl(path).data.publicUrl
         };
-    }
-
-    from<T extends keyof Database['public']['Tables']>(
-        table: T
-    ) {
-        return this.client.from(table);
     }
 }

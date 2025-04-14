@@ -1,36 +1,39 @@
 import {createServerClient} from '@supabase/ssr'
 import {cookies} from 'next/headers'
 import {ClientType, SassClient} from "@/lib/supabase/unified";
-import {Database} from "@/lib/types";
+import {Database} from "../types";
 
-export async function createSSRClient() {
-    const cookieStore = await cookies()
+export function createSSRClient() {
+    const cookieStore = cookies();
 
-    return createServerClient<Database>(
+    const supabase = createServerClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                getAll() {
-                    return cookieStore.getAll()
+                get(name: string) {
+                    return cookieStore.get(name)?.value;
                 },
-                setAll(cookiesToSet) {
+                set(name: string, value: string, options: any) {
                     try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        )
-                    } catch {
-                        // The `setAll` method was called from a Server Component.
-                        // This can be ignored if you have middleware refreshing
-                        // user sessions.
+                        cookieStore.set({ name, value, ...options });
+                    } catch (error) {
+                        // Handle error
                     }
                 },
-            }
+                remove(name: string, options: any) {
+                    try {
+                        cookieStore.delete({ name, ...options });
+                    } catch (error) {
+                        // Handle error
+                    }
+                },
+            },
         }
-    )
+    );
+
+    return new SassClient(supabase);
 }
-
-
 
 export async function createSSRSassClient() {
     const client = await createSSRClient();

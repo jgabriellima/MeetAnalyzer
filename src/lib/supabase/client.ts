@@ -1,15 +1,15 @@
-import {createBrowserClient} from '@supabase/ssr'
-import {ClientType, SassClient} from "@/lib/supabase/unified";
-import {Database} from "@/lib/types";
+import { createClient as createSPAClient } from '@supabase/supabase-js';
+import { Database } from '../types';
+import { SassClient, ClientType } from './unified';
 
-export function createSPAClient() {
-    return createBrowserClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+export function createClient() {
+  return createSPAClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
 
 export function createSPASassClient() {
-    const client = createSPAClient();
-    return new SassClient(client, ClientType.SPA);
+  const client = createClient();
+  return new SassClient(client, ClientType.SPA);
 }

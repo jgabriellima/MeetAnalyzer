@@ -2,74 +2,81 @@
 
 ## Current Work Focus
 1. **Core Application Structure:** Setting up the main Next.js App Router structure, including layout, navigation, and basic pages for meetings.
-2. **Supabase Integration:** Defining database schema, setting up migrations, configuring RLS policies, and integrating Supabase client for data operations (authentication, storage, database interaction).
-3. **Meeting Management UI:** Building the UI components for listing, viewing details, and creating new meetings, including file uploads.
-4. **Meeting Details Layout:** Implementing a two-column layout for meeting details with player/timeline visualization on the left and tab content on the right.
-5. **API Route Development:** Creating API routes needed by the frontend, such as fetching meeting details or related data like topics.
-6. **Dependency Management:** Installing and configuring necessary libraries (e.g., `d3`, `@radix-ui/react-tabs`, Supabase clients).
+2. **Enhanced Transcription System:** Implementing a comprehensive data model to support advanced transcription features:
+   - Word-level transcription with timestamps
+   - Chapter detection and summarization
+   - Entity recognition
+   - Topic categorization
+   - Sentiment analysis
+   - Auto-highlights
+   - Speaker diarization with detailed metrics
+3. **Processing Architecture:** Implementing the hybrid processing approach with Edge Functions and ModalLabs Serverless
+4. **Data Storage Optimization:** Designing efficient storage and retrieval patterns for rich transcription data
 
 ## Recent Changes
-- **Database Schema:** Defined and refined the schema for `meetings`, `meeting_participants`, `meeting_themes`, `meeting_comments`, and `accounts` tables using Supabase migrations.
-- **RLS Policies:** Implemented Row Level Security policies for all relevant tables to ensure data privacy.
-- **Supabase Client:** Refactored Supabase client interaction into a unified `SassClient` class (`src/lib/supabase/unified.ts`) for both SPA and server usage.
-- **Meeting Creation:** Implemented the `NewMeeting` page (`src/app/app/meetings/new/page.tsx`) allowing users to input title, description, and upload a recording file. File is uploaded to Supabase Storage, and a meeting record is created in the database.
-- **Meeting Details Page Layout:** Redesigned the meeting details page with a two-column layout:
-  - Left column: Player and speaker timeline visualization
-  - Right column: Content tabs (Overview, Transcript, Comments, ChatGPT)
-- **Speaker Timeline Visualization:** Implemented a timeline view showing when each participant spoke during the meeting, with:
-  - Color-coded blocks for each speaker
-  - Percentage of speaking time
-  - Time markers
-  - Current playback position indicator
-- **API Routes:** Created initial API routes, including `/api/meetings/[id]/topics` and `/api/meetings/[id]/transcript` (currently returning mock data).
-- **Bug Fixes:**
-    - Resolved multiple build errors related to missing dependencies (`d3`, `@radix-ui/react-tabs`).
-    - Fixed errors related to accessing `params` asynchronously in both the meeting details page and the topics API route.
-    - Corrected Supabase query errors by adding the `accounts` table and the foreign key relationship.
-    - Resolved linter errors related to Supabase client usage and type inconsistencies.
+- **Enhanced Database Schema:** Significantly expanded the transcription data model to include:
+  - Word-level transcription storage
+  - Chapter information with summaries
+  - Entity detection results
+  - Topic categorization
+  - Sentiment analysis
+  - Auto-generated highlights
+  - Detailed speaker metrics
+  - Utterance-level organization
+- **Data Access Patterns:** Implemented new patterns for efficient data access:
+  - Hierarchical data fetching
+  - Feature-based access control
+  - Progressive data loading
+  - Optimized query patterns
+- **Storage Strategy:** Defined comprehensive storage approach:
+  - Immediate storage for core data
+  - Progressive enhancement for advanced features
+  - Optimization techniques for large datasets
+  - Data integrity constraints
 
 ## Active Decisions
-- Sticking to Next.js App Router conventions for page and API route creation.
-- Using Supabase for BaaS (Auth, DB, Storage).
-- Implementing database changes via Supabase Migrations.
-- Defining RLS policies early for security.
-- Encapsulating Supabase interactions in a dedicated client class.
-- Using `npx supabase gen types typescript` to keep types synchronized with the database schema.
-- Using a two-column layout for the meeting details page to show player and speaker timeline visualization alongside content tabs.
-- Implementing visual representation of speaker participation in timeline format rather than just showing percentage participation.
+- Using a comprehensive data model to support all transcription features
+- Implementing progressive enhancement for advanced features
+- Storing detailed word-level information for precise playback
+- Maintaining speaker statistics for analytics
+- Using materialized views for common analytics queries
+- Implementing efficient data access patterns
+- Following strict data integrity rules
 
 ## Current Considerations
-- Ensuring components correctly handle asynchronous data fetching and parameter access (especially with App Router).
-- Maintaining consistency between TypeScript types (`src/lib/types.ts`) and the actual database schema.
-- Handling potential errors during file upload and database insertion gracefully.
-- Replacing mock data in API routes (like topics and transcript) with actual data fetching/processing logic.
-- Addressing the persistent (likely cache-related) linter errors for module resolution in `src/app/app/meetings/[id]/page.tsx`.
-- Connecting the mock speaker timeline to actual transcript data.
-- Synchronizing player position with the timeline visualization.
+- Need to implement efficient indexing strategies for large transcripts
+- Consider partitioning strategies for scaling
+- Plan for data archival and cleanup
+- Monitor storage usage and query performance
+- Consider caching strategies for frequently accessed data
+- Plan for analytics and reporting features
+- Ensure proper error handling and recovery
+- Consider data migration strategy for existing transcripts
 
 ## Next Steps
-1. **Connect Player with Speaker Timeline:**
-   - Synchronize the current playback position indicator with actual player timeupdate events.
-   - Connect the speaker timeline blocks to the actual transcript segments.
-   - Implement click handling on timeline segments to seek to the corresponding position in the recording.
+1. **Database Migration:**
+   - Create new tables for enhanced features
+   - Set up proper indexes
+   - Implement partitioning strategy
+   - Create materialized views
 
-2. **Implement `MeetingOverview` Component:**
-   - Fetch actual topic data from the `/api/meetings/[id]/topics` endpoint (or implement direct fetching).
-   - Use the fetched data to render the D3.js force-directed graph.
-   - Replace the mock data generation in the API route with actual logic (e.g., fetching from `meeting_themes` table or calling an NLP service).
+2. **Provider Updates:**
+   - Update AssemblyAI provider to store all available data
+   - Implement feature detection and progressive storage
+   - Add support for partial data updates
+   - Enhance error handling
 
-3. **Implement `MeetingTranscript` Component:**
-   - Fetch the transcript data from the `/api/meetings/[id]/transcript` endpoint.
-   - Display the diarized transcript with speaker information.
-   - Implement synchronization between transcript selection and media playback.
+3. **Frontend Enhancement:**
+   - Update UI to show new features
+   - Implement progressive loading
+   - Add feature toggles
+   - Enhance analytics display
 
-4. **Implement `MeetingComments` Component:**
-   - Fetch comments for the meeting from `meeting_comments` table.
-   - Allow users to add new comments linked to timestamps (requires UI and API updates).
-
-5. **Implement `MeetingChatGPT` Component:**
-   - Define the interaction flow.
-   - Set up API communication for sending context/queries and receiving responses.
+4. **Testing & Validation:**
+   - Test with large transcripts
+   - Validate performance
+   - Check data integrity
+   - Verify feature detection
 
 ## Open Questions
 - How should transcription be triggered? (e.g., automatically after upload, manually via button?)
@@ -77,4 +84,64 @@
 - What NLP service/logic will be used to generate the topics/themes for the overview graph?
 - How should errors during asynchronous operations within tab components be handled and displayed to the user?
 - How to best handle synchronization between the media player, transcript, and speaker timeline in real-time?
-- What approach should be used to generate the timeline visualization from actual transcript data? 
+- What approach should be used to generate the timeline visualization from actual transcript data?
+
+## Current Focus: Modal Labs Integration
+
+### Architecture Decisions
+1. **Deployment Strategy**
+   - Modal functions deployed independently
+   - Each function exposed as HTTP endpoint
+   - URLs managed via environment variables
+
+2. **Integration Pattern**
+   - Edge Functions as API gateway
+   - Provider pattern for Modal interaction
+   - HTTP-only communication in production
+
+3. **Development Workflow**
+   - Develop Modal functions locally
+   - Deploy to staging/production
+   - Store endpoint URLs in environment
+
+### Implementation Status
+1. **Completed**
+   - Basic Modal function structure
+   - FastAPI endpoint configuration
+   - Provider pattern definition
+
+2. **In Progress**
+   - Deployment automation
+   - Environment management
+   - Integration testing
+
+3. **Next Steps**
+   - Implement health checks
+   - Set up monitoring
+   - Configure auto-scaling
+   - Document deployment process
+
+### Technical Considerations
+1. **Performance**
+   - Cold start management
+   - Resource optimization
+   - Scaling configuration
+
+2. **Security**
+   - Token management
+   - Secret rotation
+   - Access control
+
+3. **Monitoring**
+   - Health check implementation
+   - Metric collection
+   - Alert configuration
+
+### Action Items
+1. [ ] Create deployment scripts
+2. [ ] Set up environment variables
+3. [ ] Implement health checks
+4. [ ] Configure monitoring
+5. [ ] Document integration process
+6. [ ] Test scaling behavior
+7. [ ] Review security measures 

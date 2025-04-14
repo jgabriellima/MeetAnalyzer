@@ -1,30 +1,184 @@
 # Meeting Analyzer
 
-Meeting Analyzer is an Open-Source web application designed to record, transcribe, and analyze business conversations, helping teams extract key insights, improve collaboration, and make data-driven decisions.
+A sophisticated web application designed to record, transcribe, and analyze business conversations, with a primary focus on the Brazilian market.
 
-## The Problem
+## Features
 
-Valuable information shared during meetings (sales calls, customer interviews, internal discussions) is often lost or hard to recall. Manually reviewing recordings is time-consuming, and extracting meaningful patterns or action items is challenging.
+- Automatic meeting recording ingestion
+- Provider-based transcription system (AssemblyAI, Whisper, Google Speech-to-Text)
+- Dynamic topic relationship mapping
+- Theme-based organization across meetings
+- Pre-meeting contextual preparation
+- CRM and calendar integration
+- Emotional analysis and communication coaching
+- AI assistant for meeting intelligence
+- Localized interface in Portuguese
 
-## Our Solution
+## Setup
 
-Meeting Analyzer provides a central hub to:
+### Prerequisites
 
-*   **Visualize Recordings:** Easily playback call recordings with speaker identification.
-*   **Searchable Transcripts:** Quickly find specific moments or keywords within the conversation.
-*   **Speaker Analysis:** Understand participation dynamics and speaking time.
-*   **AI-Powered Insights (Future):** Automatically generate summaries, identify action items, track topics, and analyze sentiment.
+- Node.js (LTS version)
+- NPM or Yarn
+- Supabase CLI
+- ngrok (for local webhook testing)
 
-## Target Audience
+### Installation
 
-Teams and individuals across various departments (Sales, Customer Success, Product, Management) who rely on meetings and want to maximize their value.
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/meeting-analyzer.git
+cd meeting-analyzer
+```
 
-## Key Value
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn
+```
 
-*   **Save Time:** Reduce manual review with searchable transcripts and summaries.
-*   **Unlock Insights:** Identify trends, customer feedback, and coaching opportunities.
-*   **Improve Collaboration:** Easily share key moments and findings with colleagues.
-*   **Data-Driven Decisions:** Base strategies and actions on actual conversation data.
+3. Copy environment variables:
+```bash
+cp .env.example .env.local
+```
+
+4. Update environment variables in `.env.local`:
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key
+ASSEMBLYAI_WEBHOOK_SECRET=your_webhook_secret
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+5. Start Supabase locally:
+```bash
+supabase start
+```
+
+6. Run database migrations:
+```bash
+chmod +x scripts/migrate.sh
+./scripts/migrate.sh
+```
+
+7. Start the development server:
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+### Webhook Setup
+
+For local development with AssemblyAI webhooks:
+
+1. Start ngrok:
+```bash
+chmod +x scripts/webhook.sh
+./scripts/webhook.sh
+```
+
+2. Copy the ngrok URL and update your environment:
+```
+NEXT_PUBLIC_APP_URL=https://your-ngrok-url
+```
+
+## Architecture
+
+### Transcription System
+
+The transcription system uses a provider/adapter pattern to support multiple transcription services:
+
+1. **Provider Interface:**
+   - Defines standard methods for transcription services
+   - Handles initialization, transcription, status checks, and webhooks
+   - Manages service-specific features and configurations
+
+2. **Default Provider (AssemblyAI):**
+   - Automatic language detection
+   - Speaker diarization
+   - Entity detection
+   - Topic extraction
+   - Sentiment analysis
+   - Chapter detection
+   - Auto highlights
+
+3. **Data Storage:**
+   - Transcription segments with speaker information
+   - Metadata (entities, topics, sentiment, etc.)
+   - Speaker profiles and statistics
+
+4. **Processing Flow:**
+   - File upload to Supabase Storage
+   - Transcription request to provider
+   - Webhook notification on completion
+   - Results processing and storage
+   - Real-time status updates
+
+## Development
+
+### Adding a New Provider
+
+1. Create a new provider class implementing `TranscriptionProvider`:
+```typescript
+export class NewProvider implements TranscriptionProvider {
+    name = 'provider_name';
+    features = {
+        // Define supported features
+    };
+
+    async initialize(config: TranscriptionConfig): Promise<void> {
+        // Initialize provider
+    }
+
+    async transcribe(meetingId: string, audioUrl: string, config?: TranscriptionConfig): Promise<void> {
+        // Start transcription
+    }
+
+    async getStatus(meetingId: string): Promise<TranscriptionStatus> {
+        // Check transcription status
+    }
+
+    async handleWebhook(payload: any): Promise<void> {
+        // Process webhook
+    }
+}
+```
+
+2. Register the provider:
+```typescript
+const newProvider = new NewProvider();
+transcriptionService.registerProvider(newProvider);
+```
+
+### Database Migrations
+
+To create a new migration:
+
+```bash
+supabase db diff --file new_migration_name
+```
+
+To apply migrations:
+
+```bash
+./scripts/migrate.sh
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🚀 Features
 

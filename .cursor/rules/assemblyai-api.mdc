@@ -1,0 +1,318 @@
+---
+description: A full reference and usage instruction guide for integrating and operating with the AssemblyAI API
+globs: 
+alwaysApply: false
+---
+---
+title: AssemblyAI - Complete API Use Guide
+description: A full reference and usage instruction guide for integrating and operating with the AssemblyAI API, built from usage examples and code patterns using Python and TypeScript.
+---
+
+```mermaid
+flowchart TD
+    A[Audio Input Source] --> B[Upload to AssemblyAI]
+    B --> C[Polling / Webhook for Transcription Completion]
+    C --> D[Transcription Result]
+    D --> E1[Auto Chapters]
+    D --> E2[Sentiment Analysis]
+    D --> E3[Entity Detection]
+    D --> E4[Topic Detection]
+    D --> E5[Speaker Diarization]
+    D --> E6[Summarization (LeMUR)]
+    D --> E7[PII Redaction]
+    D --> E8[Key Phrases]
+    D --> E9[Language Detection]
+    D --> E10[Custom Vocabulary]
+    D --> E11[Custom Spelling]
+    D --> E12[Word-Level Timestamps]
+    D --> E13[Export Paragraphs and Sentences]
+    D --> E14[Export Captions (SRT/VTT)]
+    D --> E15[Profanity Filtering]
+    D --> E16[Filler Words Control]
+    D --> E17[Word Search]
+    D --> E18[Partial Audio Transcription]
+    D --> E19[Speech Threshold Check]
+    D --> E20[Low Confidence Words]
+    D --> E21[LeMUR Custom Vocab Correction]
+    D --> F[Real-time Streaming (Optional Path)]
+    F --> G[Live Transcription]
+```
+
+## 📦 Overview
+AssemblyAI provides a robust set of endpoints and SDKs for Python and TypeScript to:
+- Transcribe audio files (async and real-time)
+- Extract metadata: entities, chapters, topics, speakers, sentiment, highlights
+- Summarize or query audio (via LeMUR)
+- Redact PII text and audio
+- Auto-detect spoken language
+- Customize vocabulary, spelling, profanity filtering
+- Access fine-grained features like word-level timestamps, paragraph export, and search
+
+Use the official [Python SDK](mdc:https:/pypi.org/project/assemblyai) or [TypeScript SDK](mdc:https:/www.npmjs.com/package/assemblyai).
+
+---
+
+## ✅ SDK Setup
+### Python
+```bash
+pip install assemblyai
+```
+
+### TypeScript
+```bash
+npm install assemblyai
+```
+
+---
+
+## 🔁 Upload Audio
+### Python
+```python
+upload_url = aai.Transcriber().upload("./local_file.mp3")
+```
+### TypeScript
+```ts
+const uploadUrl = await client.files.upload("./file.mp3")
+```
+
+---
+
+## 📝 Start Transcription
+### Python
+```python
+config = aai.TranscriptionConfig(
+  speaker_labels=True,
+  entity_detection=True,
+  iab_categories=True,
+  auto_chapters=True,
+  auto_highlights=True,
+  sentiment_analysis=True,
+  redact_pii=True,
+  language_detection=True,
+  word_boost=["aws", "azure"],
+  boost_param="high",
+  disfluencies=True,
+  filter_profanity=True,
+  punctuate=True,
+  format_text=True,
+  audio_start_from=5000,
+  audio_end_at=30000,
+  speech_threshold=0.5
+)
+config.set_custom_spelling({"SQL": ["Sequel"]})
+transcript = aai.Transcriber().transcribe(upload_url, config)
+```
+
+### TypeScript
+```ts
+const transcript = await client.transcripts.transcribe({
+  audio: uploadUrl,
+  speaker_labels: true,
+  entity_detection: true,
+  iab_categories: true,
+  auto_chapters: true,
+  auto_highlights: true,
+  sentiment_analysis: true,
+  redact_pii: true,
+  language_detection: true,
+  word_boost: ["aws", "azure"],
+  boost_param: "high",
+  disfluencies: true,
+  filter_profanity: true,
+  punctuate: true,
+  format_text: true,
+  custom_spelling: [
+    { from: ["Sequel"], to: "SQL" }
+  ],
+  audio_start_from: 5000,
+  audio_end_at: 30000,
+  speech_threshold: 0.5
+})
+```
+
+---
+
+## 📊 Accessing Results
+### Python
+```python
+print(transcript.text)
+print(transcript.entities)
+print(transcript.iab_categories.summary)
+print(transcript.auto_highlights.results)
+print(transcript.words)
+print(transcript.get_paragraphs())
+print(transcript.get_sentences())
+```
+
+### TypeScript
+```ts
+console.log(transcript.text)
+console.log(transcript.entities)
+console.log(transcript.iab_categories_result.summary)
+console.log(transcript.auto_highlights_result?.results)
+console.log(transcript.words)
+const paragraphs = await client.transcripts.paragraphs(transcript.id)
+const sentences = await client.transcripts.sentences(transcript.id)
+```
+
+---
+
+## 🔍 Word Search
+```python
+words = ["error", "login failed"]
+matches = transcript.word_search(words)
+for match in matches:
+  print(f"Found '{match.text}' {match.count} times")
+```
+
+---
+
+## 📚 LeMUR (Summarization/QA)
+### Python
+```python
+result = transcript.lemur.task("Summarize the call")
+print(result.response)
+```
+
+### TypeScript
+```ts
+const response = await client.lemur.task({
+  transcript_ids: [transcript.id],
+  prompt: "Summarize the call",
+  final_model: "anthropic/claude-3-5-sonnet"
+})
+console.log(response.response)
+```
+
+---
+
+## ✂️ PII Audio Redaction
+### Python
+```python
+config = aai.TranscriptionConfig().set_redact_pii(
+  policies=[aai.PIIRedactionPolicy.person_name],
+  redact_audio=True
+)
+transcript = aai.Transcriber().transcribe(audio_url, config)
+print(transcript.get_redacted_audio_url())
+```
+
+### TypeScript
+```ts
+const redacted = await client.transcripts.redactedAudio(transcript.id)
+console.log(redacted.redacted_audio_url)
+```
+
+---
+
+## 📄 Export Subtitles (SRT/VTT)
+```python
+srt = transcript.export_subtitles_srt(chars_per_caption=32)
+with open(f"transcript_{transcript.id}.srt", "w") as f:
+    f.write(srt)
+```
+
+---
+
+## ✏️ Export Paragraphs & Sentences
+```python
+paragraphs = transcript.get_paragraphs()
+sentences = transcript.get_sentences()
+```
+
+---
+
+## ⏱️ Word-Level Timestamps
+```python
+for word in transcript.words:
+    print(f"{word.text} ({word.start}-{word.end}) - Confidence: {word.confidence}")
+```
+
+---
+
+## 🕑 Confidence Filtering
+```ts
+const threshold = 0.4;
+const filteredSentences = sentences.filter(s =>
+  s.words.some(w => w.confidence < threshold)
+);
+```
+
+---
+
+## 🧬 LeMUR Custom Vocabulary Enhancement
+```python
+corrected = correct_transcript(transcript, word_list=["Sprinklr", "Ny'alotha"])
+print(corrected)
+```
+
+---
+
+## 🧠 Tips
+- Combine `word_boost` and `custom_spelling` for domain-specific transcriptions
+- Enable `disfluencies` for verbatim transcripts including filler words
+- Use `filter_profanity=True` for safe content generation
+- Use `speech_threshold` to avoid wasting compute on silent files
+- Prefer SDKs over raw REST for maintainability and retry logic
+
+---
+
+## ⚠️ Error Handling and Status
+```json
+{
+  "status": "error",
+  "error": "Download failed"
+}
+```
+Codes:
+- 400 → Bad Request
+- 401 → Unauthorized
+- 429 → Rate Limit Exceeded (LeMUR)
+- 5xx → Server Errors
+
+## 🌍 Endpoint Options
+- Default: `https://api.assemblyai.com`
+- EU (Pre-recorded only): `https://api.eu.assemblyai.com`
+
+## 📊 Pagination Support
+```ts
+const res = await axios.get('/v2/transcript?limit=5&after_id=abc');
+```
+Access `page_details.next_url` to iterate pages.
+
+## 🧰 Real-Time Transcription (WebSocket)
+Connect to:
+```ts
+wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000
+```
+
+# Others uses: 
+
+```
+config = aai.TranscriptionConfig(
+  speech_model=aai.SpeechModel.best,
+  iab_categories=True,
+  auto_chapters=True,
+  auto_highlights=True,
+  sentiment_analysis=True,
+  entity_detection=True,
+  dual_channel=True,
+  filter_profanity=True,
+  language_detection=True
+).set_redact_pii(
+   policies=[
+    aai.PIIRedactionPolicy.medical_condition
+    aai.PIIRedactionPolicy.email_address
+    aai.PIIRedactionPolicy.phone_number
+    aai.PIIRedactionPolicy.banking_information
+    aai.PIIRedactionPolicy.credit_card_number
+    aai.PIIRedactionPolicy.credit_card_cvv
+    aai.PIIRedactionPolicy.date_of_birth
+    aai.PIIRedactionPolicy.person_name,
+   ]
+ )
+ ```
+
+# General
+
+Any other question related to this doc can be checke by accessing the offial documentation here: https://www.assemblyai.com/docs

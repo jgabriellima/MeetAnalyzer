@@ -28,22 +28,44 @@
   - Storage
   - Row Level Security
 - **API Routes**: Next.js API routes for server-side logic
+- **Edge Functions**: Vercel Edge Functions for lightweight processing
+  - Real-time data transformations
+  - Authentication flows
+  - Simple data aggregation
+  - Basic NLP tasks
+  - Webhook handlers
+  - Caching and rate limiting
+- **ModalLabs Serverless**: Compute-intensive tasks
+  - Complex transcription processing
+  - Advanced NLP and ML tasks
+  - Large file analysis
+  - GPU-accelerated computations
+  - Batch processing jobs
+  - Custom model training
+  - Organized in function-specific stubs
+  - Proper dependency and resource management
+  - Environment-specific deployments
+  - Comprehensive logging and monitoring
 - **Provider System**:
   - Abstract provider interfaces
   - Provider factory and registry
   - Configuration-based provider selection
+  - Resource management and allocation
+  - Error handling and retries
 - **Speech Processing**: 
   - Provider-based transcription system
   - AssemblyAI (default adapter)
   - Whisper (alternative adapter)
   - Google Speech-to-Text (alternative adapter)
   - On-premise model support
+  - GPU-accelerated processing
+  - Batch processing capabilities
 - **NLP Processing**:
   - Topic extraction and relationship analysis
   - Sentiment and emotion analysis
   - Action item detection
   - Contextual summarization
-- **Modal Labs**: For specialized high-load processing tasks
+  - Scalable processing with Modal
 
 ### Third-Party Integrations
 - **CRM Integrations**:
@@ -222,4 +244,107 @@ Key dependencies include:
 - UI components from @radix-ui
 - Tailwind utilities and plugins
 - next-intl for internationalization
-- react-intl for formatting dates, numbers, and plurals 
+- react-intl for formatting dates, numbers, and plurals
+
+## Backend Processing Architecture
+
+### Modal Labs Integration
+Our processing infrastructure is built on Modal Labs, providing:
+- GPU-accelerated audio processing
+- Scalable NLP analysis
+- Batch processing capabilities
+
+Key components:
+1. **Processing Functions**
+   - Deployed as HTTP endpoints
+   - Accessible via REST API
+   - No runtime dependency on Modal SDK
+
+2. **Resource Configuration**
+   ```python
+   # Audio Processing
+   @stub.function(
+       gpu="A10G",
+       memory=16384,
+       timeout=3600
+   )
+   @modal.fastapi_endpoint()
+   def process_audio()
+   
+   # NLP Processing
+   @stub.function(
+       cpu=4,
+       memory=8192,
+       timeout=1800
+   )
+   @modal.fastapi_endpoint()
+   def process_text()
+   ```
+
+3. **Integration Layer**
+   ```typescript
+   // Edge Function Integration
+   import { ModalProvider } from '@/providers/modal';
+   
+   export class ProcessingService {
+       private modal: ModalProvider;
+       
+       constructor() {
+           this.modal = new ModalProvider({
+               processAudio: process.env.MODAL_PROCESS_AUDIO_URL,
+               processText: process.env.MODAL_PROCESS_TEXT_URL
+           });
+       }
+       
+       async processMeeting(audioUrl: string) {
+           return this.modal.processAudio(audioUrl);
+       }
+   }
+   ```
+
+### Development Workflow
+1. **Local Development**
+   ```bash
+   modal serve ./src/modal_functions/api.py
+   ```
+
+2. **Deployment**
+   ```bash
+   modal deploy ./src/modal_functions/api.py
+   ```
+
+3. **Environment Setup**
+   ```bash
+   # .env.production
+   MODAL_PROCESS_AUDIO_URL=https://org--meeting-analyzer-process-audio.modal.run
+   MODAL_PROCESS_TEXT_URL=https://org--meeting-analyzer-process-text.modal.run
+   MODAL_API_TOKEN=your_token_here
+   ```
+
+### Security & Access Control
+1. **Authentication**
+   - Token-based auth for Modal endpoints
+   - Environment-based secrets management
+   - Secure token rotation
+
+2. **Data Flow**
+   - Secure file upload to Supabase
+   - URL-based file access
+   - Encrypted data transmission
+
+### Monitoring & Observability
+1. **Health Checks**
+   ```python
+   @stub.function()
+   @modal.fastapi_endpoint()
+   def health():
+       return {
+           "status": "healthy",
+           "version": "1.0.0"
+       }
+   ```
+
+2. **Metrics**
+   - Processing latency
+   - Error rates
+   - Resource utilization 
