@@ -1,9 +1,4 @@
 ---
-description: A comprehensive guide for integrating and operating with Modal Labs for high-performance serverless computing
-globs: 
-alwaysApply: false
----
----
 title: Modal Labs - Complete API Use Guide
 description: A comprehensive guide for integrating and operating with Modal Labs for high-performance serverless computing, with focus on ML/AI workloads and batch processing.
 ---
@@ -115,6 +110,840 @@ def process_nlp_task():
 def process_large_data():
     pass
 ```
+
+## 🚦 Execution & Infrastructure Integration
+
+### Local Development Execution
+```bash
+# Direct execution of a function
+modal run ./src/modal_functions/transcription.py --audio_url "https://example.com/audio.mp3"
+
+# Running with specific parameters
+modal run -m src.modal_functions.transcription --function process_audio --args '{"url": "https://example.com/audio.mp3"}'
+
+# Development server for API endpoints
+modal serve ./src/modal_functions/api.py
+```
+
+### Production Deployment & Execution
+```python
+# src/modal_functions/transcription.py
+import modal
+
+stub = modal.Stub("meeting-analyzer")
+
+@stub.function(
+    gpu="A10G",
+    memory=16384,
+    timeout=3600,
+    image=image
+)
+def process_audio(url: str):
+    # Implementation
+    pass
+
+# Deployment endpoint
+@stub.function()
+@modal.web_endpoint(method="POST")
+async def process_meeting():
+    # Implementation
+    pass
+
+# To deploy:
+# modal deploy ./src/modal_functions/transcription.py
+```
+
+### Infrastructure Integration
+
+```mermaid
+flowchart TD
+    A[Next.js Frontend] --> B[Edge Functions]
+    B --> C[Modal Functions]
+    C --> D1[AssemblyAI Processing]
+    C --> D2[NLP Processing]
+    C --> D3[Batch Processing]
+    D1 --> E[Results]
+    D2 --> E
+    D3 --> E
+    E --> F[Supabase Storage]
+```
+
+#### Execution Patterns
+
+1. **Direct API Integration**
+```typescript
+// Frontend API call
+async function processMeeting(audioUrl: string) {
+    const response = await fetch('/api/process-meeting', {
+        method: 'POST',
+        body: JSON.stringify({ audioUrl })
+    });
+    return await response.json();
+}
+```
+
+2. **Background Job Processing**
+```python
+# Modal function
+@stub.function(
+    gpu="A10G",
+    memory=16384,
+    timeout=3600
+)
+async def process_meeting_background(meeting_id: str):
+    # 1. Fetch meeting data
+    # 2. Process with AssemblyAI
+    # 3. Run NLP analysis
+    # 4. Store results
+    pass
+
+# Edge function trigger
+async def trigger_processing(meeting_id: str):
+    process_meeting_background.spawn(meeting_id)
+```
+
+3. **Batch Processing Integration**
+```python
+@stub.function(
+    cpu=4,
+    memory=8192,
+    timeout=7200
+)
+def process_meetings_batch(meeting_ids: List[str]):
+    return modal.map(process_meeting_background, meeting_ids, order=True)
+
+# Edge function trigger
+async def trigger_batch_processing(meeting_ids: List[str]):
+    process_meetings_batch.spawn(meeting_ids)
+```
+
+#### Directory Structure
+```
+src/
+├── modal_functions/
+│   ├── __init__.py
+│   ├── config.py          # Configuration and environment setup
+│   ├── transcription.py   # AssemblyAI integration
+│   ├── nlp.py            # NLP processing functions
+│   ├── batch.py          # Batch processing handlers
+│   └── api.py            # Web endpoints
+├── edge_functions/
+│   └── process-meeting.ts # Edge function handler
+└── providers/
+    ├── modal.ts          # Modal client integration
+    └── types.ts          # Shared types
+```
+
+#### Environment Configuration
+```bash
+# .env.production
+MODAL_TOKEN_ID=prod_token_id
+MODAL_TOKEN_SECRET=prod_token_secret
+ASSEMBLYAI_API_KEY=your_api_key
+```
+
+#### Deployment Flow
+1. **Development**:
+   ```bash
+   # Start development server
+   modal serve ./src/modal_functions/api.py
+   
+   # Test specific function
+   modal run ./src/modal_functions/transcription.py --function process_audio
+   ```
+
+2. **Staging**:
+   ```bash
+   # Deploy to staging environment
+   modal deploy --env staging ./src/modal_functions/api.py
+   
+   # Verify deployment
+   modal status --env staging
+   ```
+
+3. **Production**:
+   ```bash
+   # Deploy to production
+   modal deploy --env production ./src/modal_functions/api.py
+   
+   # Monitor deployment
+   modal logs --env production
+   ```
+
+#### Health Checks & Monitoring
+```python
+@stub.function()
+@modal.web_endpoint(method="GET")
+async def healthcheck():
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
+# Monitoring endpoint
+@stub.function()
+@modal.web_endpoint(method="GET")
+async def metrics():
+    return {
+        "gpu_utilization": modal.gpu.utilization(),
+        "memory_usage": modal.memory.usage(),
+        "active_functions": modal.functions.active()
+    }
+```
+
+## 🔄 Integration Patterns
+
+### Provider Pattern
+```python
+from abc import ABC, abstractmethod
+from typing import Dict, Any
+
+class ProcessingProvider(ABC):
+    @abstractmethod
+    async def initialize(self) -> None:
+        pass
+    
+    @abstractmethod
+    async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        pass
+    
+    @abstractmethod
+    async def cleanup(self) -> None:
+        pass
+
+@stub.cls(
+    gpu="A10G",
+    memory=16384,
+    image=image
+)
+class TranscriptionProvider(ProcessingProvider):
+    def __enter__(self):
+        self.initialize()
+        
+    async def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        # Implementation
+        pass
+    
+    def __exit__(self):
+        self.cleanup()
+```
+
+### Batch Processing
+```python
+@stub.function(
+    cpu=2,
+    memory=4096,
+    timeout=3600
+)
+def process_batch(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    results = []
+    for item in items:
+        result = process_item.remote(item)
+        results.append(result)
+    return modal.gather(results)
+```
+
+## 🎯 Practical Integration & Usage
+
+### Integration Architecture
+
+```mermaid
+flowchart TD
+    A[Next.js Frontend] --> B[Edge Function]
+    B --> C[Modal Web Endpoint]
+    C --> D[Modal Function]
+    D --> E[Webhook Callback]
+    E --> F[Edge Function]
+    F --> G[Supabase]
+    G --> H[Frontend Update]
+
+    subgraph "Nossa Infraestrutura"
+        A[Next.js Frontend]
+        B[Edge Function]
+        F[Edge Function/Webhook Handler]
+        G[Supabase]
+        H[Frontend Update]
+    end
+
+    subgraph "Modal Cloud"
+        C[Modal Web Endpoint]
+        D[Modal Function]
+        E[Webhook Callback]
+    end
+```
+
+### 1. Deploy das Funções Modal
+
+```python
+# src/modal_functions/api.py
+import modal
+from typing import Dict, Any
+
+stub = modal.Stub("meeting-analyzer")
+
+@stub.function(
+    gpu="A10G",
+    memory=16384,
+    secret=modal.Secret({
+        "ASSEMBLYAI_API_KEY": "your-key"
+    })
+)
+async def process_audio(audio_url: str) -> Dict[str, Any]:
+    result = await process_with_assemblyai(audio_url)
+    return result
+
+# Endpoint HTTP público
+@stub.function()
+@modal.web_endpoint(method="POST")
+async def process_meeting(audio_url: str):
+    try:
+        # Inicia processamento assíncrono
+        job = await process_audio.spawn(audio_url)
+        
+        return {
+            "status": "processing",
+            "jobId": job.object_id,  # ID único do job
+            "webhook_url": "/api/modal-webhook"  # URL para receber callbacks
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+```
+
+### 2. Configuração do Ambiente
+
+```bash
+# .env.local
+NEXT_PUBLIC_MODAL_API_URL="https://your-modal-app.modal.run"  # URL gerada pelo Modal após deploy
+MODAL_WEBHOOK_SECRET="your-webhook-secret"  # Secreto para validar webhooks
+```
+
+### 3. Integração no Frontend (Next.js)
+
+```typescript
+// src/app/meetings/[id]/page.tsx
+'use client';
+
+import { useState } from 'react';
+import { processAudio } from '@/lib/meetings';
+
+export default function MeetingPage({ params }: { params: { id: string } }) {
+    const [status, setStatus] = useState<string>('idle');
+    
+    const handleProcessAudio = async () => {
+        try {
+            setStatus('processing');
+            
+            // Inicia processamento
+            const response = await processAudio(params.id);
+            
+            if (response.jobId) {
+                // Atualiza UI e aguarda webhook
+                setStatus('processing');
+            }
+        } catch (error) {
+            setStatus('error');
+            console.error('Processing error:', error);
+        }
+    };
+    
+    return (
+        <div>
+            <button 
+                onClick={handleProcessAudio}
+                disabled={status === 'processing'}
+            >
+                Process Audio
+            </button>
+            <div>Status: {status}</div>
+        </div>
+    );
+}
+```
+
+### 4. Camada de Serviço
+
+```typescript
+// src/lib/meetings.ts
+import { createClient } from '@supabase/supabase-js';
+
+const MODAL_API_URL = process.env.NEXT_PUBLIC_MODAL_API_URL;
+
+export async function processAudio(meetingId: string) {
+    // 1. Obtém URL do áudio do Supabase
+    const { data: meeting } = await supabase
+        .from('meetings')
+        .select('audio_url')
+        .eq('id', meetingId)
+        .single();
+    
+    if (!meeting?.audio_url) {
+        throw new Error('Audio not found');
+    }
+    
+    // 2. Chama endpoint Modal
+    const response = await fetch(`${MODAL_API_URL}/process_meeting`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio_url: meeting.audio_url })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Modal processing failed');
+    }
+    
+    const { jobId } = await response.json();
+    
+    // 3. Atualiza status no banco
+    await supabase
+        .from('meetings')
+        .update({ 
+            processing_status: 'processing',
+            modal_job_id: jobId
+        })
+        .eq('id', meetingId);
+    
+    return { jobId };
+}
+```
+
+### 5. Webhook Handler
+
+```typescript
+// src/app/api/modal-webhook/route.ts
+import { headers } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
+
+export async function POST(request: Request) {
+    // 1. Valida webhook
+    const headersList = headers();
+    const signature = headersList.get('x-modal-signature');
+    if (!validateModalWebhook(signature)) {
+        return Response.json({ error: 'Invalid signature' }, { status: 401 });
+    }
+    
+    const payload = await request.json();
+    const { jobId, status, result } = payload;
+    
+    try {
+        // 2. Atualiza banco de dados
+        const { data: meeting } = await supabase
+            .from('meetings')
+            .update({
+                processing_status: status,
+                transcription: result?.transcription,
+                analysis: result?.analysis
+            })
+            .eq('modal_job_id', jobId)
+            .select()
+            .single();
+        
+        // 3. Notifica frontend via Realtime
+        if (meeting) {
+            await supabase
+                .from('meeting_updates')
+                .insert({
+                    meeting_id: meeting.id,
+                    status,
+                    timestamp: new Date().toISOString()
+                });
+        }
+        
+        return Response.json({ success: true });
+    } catch (error) {
+        console.error('Webhook processing error:', error);
+        return Response.json({ error: 'Processing failed' }, { status: 500 });
+    }
+}
+```
+
+### 6. Monitoramento e Status
+
+```typescript
+// src/lib/modal-status.ts
+export async function checkModalJobStatus(jobId: string) {
+    const response = await fetch(`${MODAL_API_URL}/jobs/${jobId}`);
+    if (!response.ok) {
+        throw new Error('Failed to check job status');
+    }
+    return response.json();
+}
+
+// Componente de status
+export function JobStatus({ jobId }: { jobId: string }) {
+    const [status, setStatus] = useState('');
+    
+    useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const result = await checkModalJobStatus(jobId);
+                setStatus(result.status);
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        };
+        
+        // Verifica status a cada 30 segundos
+        const interval = setInterval(checkStatus, 30000);
+        return () => clearInterval(interval);
+    }, [jobId]);
+    
+    return <div>Job Status: {status}</div>;
+}
+```
+
+### 7. Fluxo de Deploy
+
+```yaml
+# .github/workflows/modal-deploy.yml
+name: Deploy Modal Functions
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/modal_functions/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+      
+      - name: Install Modal
+        run: pip install modal
+      
+      - name: Configure Modal
+        run: |
+          echo "${{ secrets.MODAL_TOKEN_ID }}" > ~/.modal/token.id
+          echo "${{ secrets.MODAL_TOKEN_SECRET }}" > ~/.modal/token.secret
+      
+      - name: Deploy Functions
+        run: |
+          cd src/modal_functions
+          modal deploy api.py --env production
+      
+      - name: Update API URL
+        run: |
+          # Atualiza URL no .env.production
+          MODAL_URL=$(modal endpoints list --json | jq -r '.[] | select(.name=="process_meeting") | .url')
+          echo "NEXT_PUBLIC_MODAL_API_URL=$MODAL_URL" >> .env.production
+```
+
+### 8. Recuperação de Erros
+
+```typescript
+// src/lib/modal-error-handling.ts
+export class ModalProcessingError extends Error {
+    constructor(
+        message: string,
+        public jobId?: string,
+        public status?: string
+    ) {
+        super(message);
+        this.name = 'ModalProcessingError';
+    }
+}
+
+export async function handleModalError(error: ModalProcessingError, meetingId: string) {
+    // 1. Registra erro
+    await supabase
+        .from('meeting_errors')
+        .insert({
+            meeting_id: meetingId,
+            job_id: error.jobId,
+            error_message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    
+    // 2. Notifica administradores
+    await notifyAdmins({
+        type: 'modal_error',
+        meetingId,
+        error: error.message
+    });
+    
+    // 3. Atualiza status
+    await supabase
+        .from('meetings')
+        .update({ 
+            processing_status: 'error',
+            error_details: error.message
+        })
+        .eq('id', meetingId);
+}
+```
+
+### 9. Uso Prático
+
+1. **Iniciar Processamento**:
+```typescript
+// Em qualquer componente
+const startProcessing = async (meetingId: string) => {
+    try {
+        const { jobId } = await processAudio(meetingId);
+        // jobId pode ser usado para acompanhamento
+    } catch (error) {
+        await handleModalError(error, meetingId);
+    }
+};
+```
+
+2. **Acompanhar Progresso**:
+```typescript
+// Componente com Realtime
+function MeetingProgress({ meetingId }: { meetingId: string }) {
+    const [status, setStatus] = useState('');
+    
+    useEffect(() => {
+        const subscription = supabase
+            .channel('meeting_updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'meeting_updates',
+                    filter: `meeting_id=eq.${meetingId}`
+                },
+                (payload) => {
+                    setStatus(payload.new.status);
+                }
+            )
+            .subscribe();
+            
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [meetingId]);
+    
+    return <div>Processing Status: {status}</div>;
+}
+```
+
+## 🎛️ Resource Management
+
+### GPU Configuration
+```python
+GPU_CONFIGS = {
+    "transcription": {
+        "type": "A10G",
+        "memory": 16384,
+        "timeout": 3600
+    },
+    "ml_inference": {
+        "type": "A100",
+        "memory": 32768,
+        "timeout": 7200
+    }
+}
+```
+
+### Memory Management
+```python
+@stub.function(
+    memory=lambda input_size: min(input_size * 2, 32768),
+    timeout=3600
+)
+def process_with_dynamic_memory(data: bytes) -> Dict[str, Any]:
+    pass
+```
+
+## 🔍 Error Handling
+
+### Retry Logic
+```python
+@stub.function(
+    retries=3,
+    backoff=modal.Backoff.exponential(initial=1)
+)
+def process_with_retries(data: Dict[str, Any]):
+    try:
+        return await process_data(data)
+    except Exception as e:
+        await notify_error(str(e))
+        raise
+```
+
+### Checkpointing
+```python
+@stub.function(
+    checkpoint=True,
+    memory=16384
+)
+def long_running_task():
+    checkpoint_state = {}
+    # Implementation with checkpointing
+    pass
+```
+
+## 📊 Monitoring & Logging
+
+### Function Metrics
+```python
+@stub.function(
+    gpu="A10G",
+    memory=16384
+)
+def monitored_process():
+    with modal.metrics.timer("processing_time"):
+        # Implementation
+        pass
+```
+
+### Resource Usage
+```python
+@stub.function(
+    gpu="A10G",
+    memory=16384
+)
+def track_resources():
+    modal.metrics.gauge(
+        "gpu_memory_used",
+        modal.gpu.memory_used()
+    )
+```
+
+## 🔒 Security
+
+### Secret Management
+```python
+secret = modal.Secret({
+    "API_KEY": "your-api-key"
+})
+
+@stub.function(secret=secret)
+def secure_process():
+    key = os.environ["API_KEY"]
+    # Implementation
+```
+
+### Network Isolation
+```python
+@stub.function(
+    network_file_systems={"/data": volume},
+    allow_network_access=["api.assemblyai.com"]
+)
+def isolated_process():
+    pass
+```
+
+## 💡 Best Practices
+
+1. **Resource Optimization**
+   - Use appropriate GPU types
+   - Set memory limits correctly
+   - Configure timeouts properly
+   - Implement checkpointing for long tasks
+
+2. **Error Handling**
+   - Implement retries with backoff
+   - Use checkpointing for recovery
+   - Handle partial failures
+   - Monitor resource usage
+
+3. **Performance**
+   - Batch similar operations
+   - Reuse container images
+   - Cache intermediate results
+   - Use appropriate instance types
+
+4. **Security**
+   - Manage secrets properly
+   - Restrict network access
+   - Implement proper authentication
+   - Monitor usage patterns
+
+## 🚀 Deployment
+
+### Development
+```bash
+modal serve modal_functions/transcription.py
+```
+
+### Production
+```bash
+modal deploy modal_functions/transcription.py
+```
+
+### Environment Management
+```bash
+modal environment create production
+modal environment list
+modal token new --env production
+```
+
+## 🔧 Common Use Cases
+
+1. **Transcription Processing**
+```python
+@stub.function(
+    gpu="A10G",
+    memory=16384,
+    timeout=3600
+)
+async def process_transcription(audio_url: str) -> Dict[str, Any]:
+    provider = TranscriptionProvider()
+    return await provider.process({"url": audio_url})
+```
+
+2. **NLP Tasks**
+```python
+@stub.function(
+    cpu=2,
+    memory=4096,
+    timeout=1800
+)
+def process_nlp(text: str) -> Dict[str, Any]:
+    # NLP processing implementation
+    pass
+```
+
+3. **Batch Processing**
+```python
+@stub.function(
+    cpu=4,
+    memory=8192,
+    timeout=7200
+)
+def process_batch(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return modal.map(process_item, items, order=True)
+```
+
+## ⚠️ Error Codes & Troubleshooting
+
+Common error codes:
+- `RESOURCE_EXCEEDED`: Memory or GPU limits exceeded
+- `TIMEOUT`: Function execution timeout
+- `NETWORK_ERROR`: Network connectivity issues
+- `CONTAINER_ERROR`: Container startup or runtime errors
+
+## 📈 Performance Tips
+
+1. **Container Optimization**
+   - Use slim base images
+   - Install only required dependencies
+   - Cache layers effectively
+   - Pre-warm containers when possible
+
+2. **Resource Allocation**
+   - Monitor GPU utilization
+   - Track memory usage patterns
+   - Adjust timeouts based on workload
+   - Use appropriate instance types
+
+3. **Cost Optimization**
+   - Batch similar operations
+   - Use spot instances when possible
+   - Implement proper caching
+   - Monitor resource usage
+
+# General
+
+For more detailed information, refer to:
+- [Modal Labs Documentation](https://modal.com/docs)
+- [API Reference](https://modal.com/docs/reference)
+- [Examples Repository](https://github.com/modal-labs/modal-examples)
 
 ## 🌐 Web Endpoints & API Integration
 
@@ -330,358 +1159,4 @@ def rate_limited_endpoint(request: Request):
             detail="Too many requests"
         )
     return {"status": "ok"}
-```
-
-## 🚦 Execution & Infrastructure Integration
-
-### Local Development Execution
-```bash
-# Direct execution of a function
-modal run ./src/modal_functions/transcription.py --audio_url "https://example.com/audio.mp3"
-
-# Running with specific parameters
-modal run -m src.modal_functions.transcription --function process_audio --args '{"url": "https://example.com/audio.mp3"}'
-
-# Development server for API endpoints
-modal serve ./src/modal_functions/api.py
-```
-
-### Production Deployment & Execution
-```python
-# src/modal_functions/transcription.py
-import modal
-
-stub = modal.Stub("meeting-analyzer")
-
-@stub.function(
-    gpu="A10G",
-    memory=16384,
-    timeout=3600,
-    image=image
-)
-def process_audio(url: str):
-    # Implementation
-    pass
-
-# Deployment endpoint
-@stub.function()
-@modal.web_endpoint(method="POST")
-async def process_meeting():
-    # Implementation
-    pass
-
-# To deploy:
-# modal deploy ./src/modal_functions/transcription.py
-```
-
-### Infrastructure Integration
-
-```mermaid
-flowchart TD
-    A[Next.js Frontend] --> B[Edge Functions]
-    B --> C[Modal Functions]
-    C --> D1[AssemblyAI Processing]
-    C --> D2[NLP Processing]
-    C --> D3[Batch Processing]
-    D1 --> E[Results]
-    D2 --> E
-    D3 --> E
-    E --> F[Supabase Storage]
-```
-
-#### Execution Patterns
-
-1. **Direct API Integration**
-```typescript
-// Frontend API call
-async function processMeeting(audioUrl: string) {
-    const response = await fetch('/api/process-meeting', {
-        method: 'POST',
-        body: JSON.stringify({ audioUrl })
-    });
-    return await response.json();
-}
-```
-
-2. **Background Job Processing**
-```python
-# Modal function
-@stub.function(
-    gpu="A10G",
-    memory=16384,
-    timeout=3600
-)
-async def process_meeting_background(meeting_id: str):
-    # 1. Fetch meeting data
-    # 2. Process with AssemblyAI
-    # 3. Run NLP analysis
-    # 4. Store results
-    pass
-
-# Edge function trigger
-async def trigger_processing(meeting_id: str):
-    process_meeting_background.spawn(meeting_id)
-```
-
-3. **Batch Processing Integration**
-```python
-@stub.function(
-    cpu=4,
-    memory=8192,
-    timeout=7200
-)
-def process_meetings_batch(meeting_ids: List[str]):
-    return modal.map(process_meeting_background, meeting_ids, order=True)
-
-# Edge function trigger
-async def trigger_batch_processing(meeting_ids: List[str]):
-    process_meetings_batch.spawn(meeting_ids)
-```
-
-#### Directory Structure
-```
-src/
-├── modal_functions/
-│   ├── __init__.py
-│   ├── config.py          # Configuration and environment setup
-│   ├── transcription.py   # AssemblyAI integration
-│   ├── nlp.py            # NLP processing functions
-│   ├── batch.py          # Batch processing handlers
-│   └── api.py            # Web endpoints
-├── edge_functions/
-│   └── process-meeting.ts # Edge function handler
-└── providers/
-    ├── modal.ts          # Modal client integration
-    └── types.ts          # Shared types
-```
-
-#### Environment Configuration
-```bash
-# .env.production
-MODAL_TOKEN_ID=prod_token_id
-MODAL_TOKEN_SECRET=prod_token_secret
-ASSEMBLYAI_API_KEY=your_api_key
-```
-
-#### Deployment Flow
-1. **Development**:
-   ```bash
-   # Start development server
-   modal serve ./src/modal_functions/api.py
-   ```
-
-2. **Staging**:
-   ```bash
-   # Deploy to staging environment
-   MODAL_ENVIRONMENT=staging modal deploy ./src/modal_functions/api.py
-   ```
-
-3. **Production**:
-   ```bash
-   # Deploy to production
-   MODAL_ENVIRONMENT=production modal deploy ./src/modal_functions/api.py
-   ```
-
-#### Health Checks & Monitoring
-
-```python
-@stub.function()
-@modal.web_endpoint()
-def health():
-    return {
-        "status": "healthy",
-        "version": "1.0.0",
-        "environment": os.environ.get("MODAL_ENVIRONMENT", "development")
-    }
-
-@stub.function()
-@modal.web_endpoint()
-def monitor():
-    return {
-        "cpu_usage": get_cpu_metrics(),
-        "memory_usage": get_memory_metrics(),
-        "active_containers": get_container_count()
-    }
-```
-
-## 📊 Error Codes & Troubleshooting
-
-Common error codes and their meanings:
-
-| Code | Description | Solution |
-|------|-------------|----------|
-| `RESOURCE_EXCEEDED` | Container exceeded memory/CPU limits | Increase resource allocation |
-| `TIMEOUT` | Function execution timed out | Adjust timeout or optimize code |
-| `NETWORK_ERROR` | Network connectivity issues | Check network configuration |
-| `GPU_UNAVAILABLE` | GPU resources not available | Try different GPU type or wait |
-| `COLD_START` | Container cold start delay | Use warm-up strategies |
-
-## 🚀 Performance Tips
-
-1. **Container Optimization**:
-   - Use appropriate base images
-   - Minimize dependencies
-   - Implement caching strategies
-
-2. **Resource Allocation**:
-   - Right-size memory and CPU
-   - Use GPU only when needed
-   - Implement proper scaling
-
-3. **Cost Optimization**:
-   - Use spot instances when possible
-   - Implement proper cleanup
-   - Monitor resource usage
-
-## 📚 References
-
-- ](hom/ce](https://modal.com/docs/reference)
-- [Examples Repository](mdc:https:/github.com/modal-labs/modal-examples)
-
-## 🔄 Fluxo de Desenvolvimento e Execução
-
-### Visão Geral do Fluxo
-```mermaid
-flowchart TD
-    subgraph "Fase de Desenvolvimento"
-        A1[Desenvolvimento das Funções Modal] --> A2[Deploy das Funções]
-        A2 --> A3[Geração de URLs dos Endpoints]
-    end
-    
-    subgraph "Fase de Execução (Runtime)"
-        B1[Cliente/Frontend] --> B2[Chamada HTTP]
-        B2 --> B3[Modal Endpoint]
-        B3 --> B4[Processamento]
-        B4 --> B5[Resposta]
-    end
-    
-    A3 --> B3
-```
-
-### 1. Fase de Desenvolvimento
-Durante o desenvolvimento, você:
-1. Desenvolve as funções Modal em Python
-2. Faz o deploy dessas funções usando o CLI do Modal
-3. Recebe URLs únicas para cada endpoint
-
-```python
-# src/modal_functions/api.py
-import modal
-
-stub = modal.Stub("meeting-analyzer")
-
-@stub.function()
-@modal.fastapi_endpoint(method="POST")
-def process_audio(audio_data: dict):
-    # Implementação do processamento
-    return {"status": "success"}
-
-# Deploy via CLI:
-# modal deploy ./src/modal_functions/api.py
-# Output: https://your-org--meeting-analyzer-process-audio.modal.run
-```
-
-### 2. Fase de Execução (Runtime)
-Durante a execução da aplicação, você:
-1. Usa as URLs geradas para fazer chamadas HTTP
-2. Não precisa do CLI ou SDK Python do Modal
-3. Interage apenas via HTTP com os endpoints deployados
-
-```typescript
-// src/app/api/process-meeting/route.ts
-export async function POST(request: Request) {
-    const MODAL_ENDPOINT = process.env.MODAL_PROCESS_AUDIO_URL;
-    
-    try {
-        const response = await fetch(MODAL_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.MODAL_API_TOKEN}`
-            },
-            body: JSON.stringify(await request.json())
-        });
-        
-        return Response.json(await response.json());
-    } catch (error) {
-        return Response.error();
-    }
-}
-```
-
-### Benefícios desta Abordagem
-1. **Separação Clara**:
-   - Desenvolvimento e deploy são feitos offline
-   - Runtime apenas consome endpoints HTTP
-   - Não precisa do SDK Python em produção
-
-2. **Simplicidade**:
-   - Frontend não precisa conhecer Modal
-   - Interação via HTTP padrão
-   - Fácil integração com qualquer linguagem/framework
-
-3. **Segurança**:
-   - Tokens e configurações sensíveis ficam no Modal
-   - Frontend só precisa do token de autenticação
-   - Menor superfície de ataque
-
-### Exemplo de Fluxo Completo
-
-1. **Setup Inicial (Uma vez)**:
-```bash
-# Desenvolvimento
-modal deploy ./src/modal_functions/api.py
-
-# Guardar URLs geradas
-MODAL_PROCESS_AUDIO_URL=https://your-org--meeting-analyzer-process-audio.modal.run
-MODAL_PROCESS_TEXT_URL=https://your-org--meeting-analyzer-process-text.modal.run
-```
-
-2. **Uso em Produção**:
-```typescript
-// Frontend/Cliente
-async function processAudio(audioFile: File) {
-    // 1. Upload do arquivo
-    const uploadUrl = await getUploadUrl(audioFile);
-    
-    // 2. Chamada ao endpoint Modal
-    const response = await fetch('/api/process-audio', {
-        method: 'POST',
-        body: JSON.stringify({ url: uploadUrl })
-    });
-    
-    // 3. Acompanhamento do processamento
-    const { jobId } = await response.json();
-    return jobId;
-}
-
-// Edge Function
-async function processAudioHandler(req: Request) {
-    // Chama o endpoint Modal deployado
-    const result = await fetch(process.env.MODAL_PROCESS_AUDIO_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${process.env.MODAL_API_TOKEN}`
-        },
-        body: JSON.stringify(req.body)
-    });
-    
-    return result.json();
-}
-```
-
-### Melhores Práticas
-1. **Gestão de URLs**:
-   - Armazene URLs dos endpoints em variáveis de ambiente
-   - Use diferentes URLs para dev/staging/prod
-   - Mantenha um registro das URLs deployadas
-
-2. **Versionamento**:
-   - Versione suas funções Modal
-   - Faça deploy com tags de versão
-   - Mantenha compatibilidade entre versões
-
-3. **Monitoramento**:
-   - Use os endpoints de health check
-   - Monitore latência e erros
-   - Configure alertas para falhas 
+``` 
