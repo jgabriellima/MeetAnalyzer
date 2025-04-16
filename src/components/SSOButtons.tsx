@@ -1,7 +1,8 @@
 'use client';
 
-import { createSPAClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 import Link from "next/link";
+import { useLoading } from '@/providers/loading/LoadingProvider';
 
 type Provider = 'github' | 'google' | 'facebook' | 'apple';
 
@@ -67,19 +68,32 @@ function getEnabledProviders(): Provider[] {
 }
 
 export default function SSOButtons({ onError }: SSOButtonsProps) {
+    const { startLoading, stopLoading } = useLoading();
+
     const handleSSOLogin = async (provider: Provider) => {
         try {
-            const supabase = createSPAClient();
+            startLoading(`Autenticando com ${PROVIDER_CONFIGS[provider].name}...`);
+            const supabase = createClient();
+            
+            // Opções para garantir redirecionamento para a mesma página
+            // Isso permite detectar o hash fragment na URL após autenticação
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: `${window.location.origin}/api/auth/callback`,
+                    // Não usar redirectTo em login OAuth pois isso força o fluxo de PKCE
+                    // que causa um redirecionamento adicional e perde o hash
+                    redirectTo: window.location.href,
+                    skipBrowserRedirect: false, // Garante que o browser seja redirecionado
                 },
             });
 
             if (error) throw error;
+            // Não chamamos stopLoading aqui porque haverá um redirecionamento
+            // O loading será tratado após o redirecionamento de volta
         } catch (err: Error | unknown) {
+            stopLoading(); // Garantir que o loading pare em caso de erro
             if (err instanceof Error) {
+                console.error('Erro no login SSO:', err);
                 onError?.(err.message);
             } else {
                 onError?.('Ocorreu um erro desconhecido');

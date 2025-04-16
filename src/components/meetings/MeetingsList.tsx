@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   Card, 
   CardContent, 
@@ -20,26 +22,30 @@ import {
   FileText,
   MessageSquare
 } from 'lucide-react';
-import { createSPASassClient } from '@/lib/supabase/client';
-import { createSPAClient } from '@/lib/supabase/client';
-import { formatDistanceToNow, format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { UsageProvider } from '@/providers/usage/UsageProvider';
+import { createClientSassClient } from '@/lib/supabase/server';
 
 interface Meeting {
   id: string;
-  title: string | null;
-  description: string | null;
-  meeting_date: string | null;
-  duration: number | null;
-  participants_count: number | null;
-  created_at: string | null;
+  name: string;
+  audio_url: string | null;
+  created_at: string;
+  transcription_id: string | null;
+  transcription_status: string | null;
+  transcription_language: string | null;
+  transcription_error: string | null;
+  transcription_config: any;
+  user_id: string;
+  title?: string | null;
+  description?: string | null;
+  meeting_date?: string | null;
+  duration?: number | null;
+  participants_count?: number | null;
   account_id?: string | null;
   opportunity_id?: string | null;
   recording_url?: string | null;
   transcript?: string | null;
   updated_at?: string | null;
-  user_id?: string;
 }
 
 /**
@@ -59,8 +65,7 @@ export function MeetingsList() {
       try {
         setLoading(true);
         
-        const sassClient = createSPASassClient();
-        const supabase = createSPAClient();
+        const sassClient = createClientSassClient();
         const user = await sassClient.getUser();
         
         if (!user) {
@@ -68,7 +73,7 @@ export function MeetingsList() {
         }
         
         // Buscar reuniões do usuário
-        const { data: meetingsData, error } = await supabase
+        const { data: meetingsData, error } = await sassClient.getSupabaseClient()
           .from('meetings')
           .select('*')
           .eq('user_id', user.id)
@@ -200,50 +205,53 @@ export function MeetingsList() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {meetings.map((meeting) => (
           <Link key={meeting.id} href={`/app/meetings/${meeting.id}`}>
-            <Card className="h-full cursor-pointer hover:border-primary transition-colors">
+            <Card className="h-full hover:border-primary/50 transition-all">
               <CardHeader className="pb-2">
-                <CardTitle className="truncate">{meeting.title || 'Reunião sem título'}</CardTitle>
+                <CardTitle className="text-lg font-semibold truncate">
+                  {meeting.name || 'Reunião sem título'}
+                </CardTitle>
                 <CardDescription>
-                  {formatTimeAgo(meeting.created_at)}
+                  {meeting.created_at ? formatTimeAgo(meeting.created_at) : 'Data desconhecida'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center text-muted-foreground">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {formatDateTime(meeting.meeting_date)}
-                  </div>
-                  {meeting.duration && (
-                    <div className="flex items-center text-muted-foreground">
-                      <Clock className="mr-2 h-4 w-4" />
-                      {formatDuration(meeting.duration)}
-                    </div>
-                  )}
-                  {meeting.participants_count && (
-                    <div className="flex items-center text-muted-foreground">
-                      <Users className="mr-2 h-4 w-4" />
-                      {meeting.participants_count} participantes
-                    </div>
+                <div className="space-y-2">
+                  {meeting.transcription_status === 'completed' ? (
+                    <p className="text-xs text-emerald-600 font-medium flex items-center">
+                      <FileText className="h-3 w-3 mr-1" />
+                      Transcrição completa
+                    </p>
+                  ) : meeting.transcription_status === 'processing' ? (
+                    <p className="text-xs text-amber-600 font-medium flex items-center">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Processando transcrição...
+                    </p>
+                  ) : meeting.transcription_error ? (
+                    <p className="text-xs text-red-500 font-medium flex items-center">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Erro na transcrição
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500 font-medium flex items-center">
+                      <MessageSquare className="h-3 w-3 mr-1" />
+                      Sem transcrição
+                    </p>
                   )}
                 </div>
-                {meeting.description && (
-                  <p className="mt-4 text-sm line-clamp-2">{meeting.description}</p>
-                )}
               </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="flex space-x-2">
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <FileText className="mr-1 h-3 w-3" />
-                    Transcrição
-                  </div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <MessageSquare className="mr-1 h-3 w-3" />
-                    Comentários
-                  </div>
+              <CardFooter className="pt-0">
+                <div className="w-full flex justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {meeting.meeting_date ? formatDateTime(meeting.meeting_date) : 'Sem data'}
+                  </span>
+                  {meeting.duration && (
+                    <span className="flex items-center">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {formatDuration(meeting.duration)}
+                    </span>
+                  )}
                 </div>
-                <Button size="sm" variant="ghost">
-                  Ver detalhes
-                </Button>
               </CardFooter>
             </Card>
           </Link>
@@ -251,4 +259,4 @@ export function MeetingsList() {
       </div>
     </div>
   );
-} 
+}

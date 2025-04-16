@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
-import { ArrowLeft, MessageSquare, LineChart, Lightbulb, Clock, Zap } from 'lucide-react';
+import { ArrowLeft, MessageSquare, LineChart, Lightbulb, Clock, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function AuthLayout({
                                        children,
@@ -7,6 +10,8 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     const productName = process.env.NEXT_PUBLIC_PRODUCTNAME || "Meeting Analyzer";
+    const [currentTestimonial, setCurrentTestimonial] = useState(0);
+    
     const testimonials = [
         {
             quote: "Nosso time descobriu insights que estavam se perdendo em nossas reuniões há meses. Identificamos tendências nos feedbacks de clientes que mudaram nossa estratégia de produto.",
@@ -27,6 +32,23 @@ export default function AuthLayout({
             avatar: "JC"
         }
     ];
+
+    // Auto-rotate testimonials
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+        }, 8000);
+        
+        return () => clearInterval(timer);
+    }, [testimonials.length]);
+    
+    const nextTestimonial = () => {
+        setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    };
+    
+    const prevTestimonial = () => {
+        setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+    };
 
     const benefits = [
         {
@@ -103,33 +125,61 @@ export default function AuthLayout({
                             <h4 className="text-white text-lg font-semibold mb-4">
                                 O que nossos usuários dizem:
                             </h4>
-                            {testimonials.map((testimonial, index) => (
-                                <div
-                                    key={index}
-                                    className="relative bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10 shadow-xl mb-4"
-                                >
+                            <div className="relative">
+                                <div className="relative bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10 shadow-xl">
                                     <div className="flex items-start space-x-4">
                                         <div className="flex-shrink-0">
                                             <div className="w-10 h-10 rounded-full bg-primary-400/30 flex items-center justify-center text-white font-semibold">
-                                                {testimonial.avatar}
+                                                {testimonials[currentTestimonial].avatar}
                                             </div>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm text-white/90 mb-2 font-light leading-relaxed">
-                                                "{testimonial.quote}"
+                                                "{testimonials[currentTestimonial].quote}"
                                             </p>
                                             <div className="mt-2">
                                                 <p className="text-sm font-medium text-white">
-                                                    {testimonial.author}
+                                                    {testimonials[currentTestimonial].author}
                                                 </p>
                                                 <p className="text-sm text-primary-200">
-                                                    {testimonial.role}
+                                                    {testimonials[currentTestimonial].role}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                                
+                                {/* Navigation Controls */}
+                                <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2">
+                                    <button 
+                                        onClick={prevTestimonial}
+                                        className="bg-white/10 hover:bg-white/20 rounded-full p-1 text-white transition-colors"
+                                    >
+                                        <ChevronLeft size={18} />
+                                    </button>
+                                </div>
+                                <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2">
+                                    <button 
+                                        onClick={nextTestimonial}
+                                        className="bg-white/10 hover:bg-white/20 rounded-full p-1 text-white transition-colors"
+                                    >
+                                        <ChevronRight size={18} />
+                                    </button>
+                                </div>
+                                
+                                {/* Indicators */}
+                                <div className="flex justify-center mt-4 space-x-2">
+                                    {testimonials.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => setCurrentTestimonial(index)}
+                                            className={`w-2 h-2 rounded-full transition-colors ${
+                                                index === currentTestimonial ? 'bg-white' : 'bg-white/30'
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="text-center bg-white/10 rounded-lg p-4 border border-white/10">

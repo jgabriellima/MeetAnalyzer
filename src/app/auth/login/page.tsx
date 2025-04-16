@@ -6,6 +6,7 @@ import {useEffect, useState} from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SSOButtons from '@/components/SSOButtons';
+import { useLoading } from '@/providers/loading/LoadingProvider';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -14,11 +15,55 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [showMFAPrompt, setShowMFAPrompt] = useState(false);
     const router = useRouter();
+    const { startLoading, stopLoading } = useLoading();
+
+    // Detectar tokens na URL após login OAuth
+    useEffect(() => {
+        const checkForAuthSession = async () => {
+            // Verifica se há uma hash na URL (indicação de login OAuth)
+            if (typeof window !== 'undefined' && window.location.hash) {
+                const hashParams = new URLSearchParams(
+                    window.location.hash.substring(1) // Remove o # no início
+                );
+                
+                // Se tiver um access_token na URL, significa que o login OAuth foi bem-sucedido
+                if (hashParams.has('access_token')) {
+                    try {
+                        console.log('Detectado login OAuth bem-sucedido, redirecionando...');
+                        startLoading('Finalizando autenticação...');
+                        const client = createSPASassClient();
+                        
+                        // Aguardar um momento para o Supabase processar a sessão
+                        setTimeout(() => {
+                            // Verificar se o usuário está autenticado
+                            client.getUser().then(user => {
+                                if (user) {
+                                    // Limpar a URL e redirecionar
+                                    window.history.replaceState(null, '', '/auth/login');
+                                    router.push('/app');
+                                } else {
+                                    stopLoading();
+                                }
+                            }).catch(() => {
+                                stopLoading();
+                            });
+                        }, 500);
+                    } catch (error) {
+                        console.error('Erro ao processar autenticação OAuth:', error);
+                        stopLoading();
+                    }
+                }
+            }
+        };
+        
+        checkForAuthSession();
+    }, [router, startLoading, stopLoading]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        startLoading('Autenticando...');
 
         try {
             const client = await createSPASassClient();
@@ -35,6 +80,7 @@ export default function LoginPage() {
             if (mfaData.nextLevel === 'aal2' && mfaData.nextLevel !== mfaData.currentLevel) {
                 setShowMFAPrompt(true);
             } else {
+                startLoading('Redirecionando para o dashboard...');
                 router.push('/app');
                 return;
             }
@@ -44,6 +90,7 @@ export default function LoginPage() {
             } else {
                 setError('An unknown error occurred');
             }
+            stopLoading();
         } finally {
             setLoading(false);
         }
@@ -52,9 +99,10 @@ export default function LoginPage() {
 
     useEffect(() => {
         if(showMFAPrompt) {
+            startLoading('Redirecionando para verificação em duas etapas...');
             router.push('/auth/2fa');
         }
-    }, [showMFAPrompt, router]);
+    }, [showMFAPrompt, router, startLoading]);
 
 
     return (
@@ -125,17 +173,6 @@ export default function LoginPage() {
                     </button>
                 </div>
             </form>
-
-            <div className="mt-6">
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                        <span className="bg-white px-2 text-gray-500">Ou continue com</span>
-                    </div>
-                </div>
-            </div>
 
             <SSOButtons onError={setError} />
 

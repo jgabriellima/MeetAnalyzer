@@ -101,7 +101,7 @@ export class UsageProvider {
   /**
    * Verifica se um usuário atingiu o limite de um recurso
    */
-  async checkUsageLimit(userId: string, feature: keyof typeof PLAN_LIMITS['free']): Promise<boolean> {
+  async checkUsageLimit(userId: string, feature: keyof typeof PLAN_LIMITS['free']): Promise<UsageLimitResult> {
     if (!userId) {
       throw new Error('ID de usuário é obrigatório');
     }
@@ -114,7 +114,10 @@ export class UsageProvider {
         .eq('id', userId)
         .single();
 
-      if (accountError) throw accountError;
+      if (accountError) {
+        console.error('Erro ao buscar plano atual do usuário:', accountError);
+        throw accountError;
+      }
 
       const plan = accountData?.subscription_plan || 'free';
       const limits = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS] || PLAN_LIMITS.free;
@@ -134,10 +137,21 @@ export class UsageProvider {
 
       const current = data?.count || 0;
       
-      return current >= limit;
+      return {
+        current,
+        limit,
+        isLimited: current >= limit,
+        percentUsed: limit ? Math.min(100, Math.round((current / limit) * 100)) : 100
+      };
     } catch (error) {
       console.error('Erro ao verificar limite de uso:', error);
-      return false;
+      // Retornar valores padrão em caso de erro
+      return {
+        current: 0,
+        limit: PLAN_LIMITS.free[feature] || 0,
+        isLimited: false,
+        percentUsed: 0
+      };
     }
   }
 

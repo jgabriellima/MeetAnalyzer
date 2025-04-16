@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Check, ArrowRight, ArrowLeft, Network, FileText, Target, Calendar, Zap, MessagesSquare, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { createSPASassClient } from '@/lib/supabase/client';
-import { createSPAClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/client';
 
 const ONBOARDING_STEPS = [
   {
@@ -52,7 +52,7 @@ export function OnboardingFlow() {
     const fetchUserInfo = async () => {
       try {
         const sassClient = createSPASassClient();
-        const supabase = createSPAClient();
+        const supabase = createClient();
         const user = await sassClient.getUser();
         if (user) {
           // Buscar perfil do usuário para obter o nome

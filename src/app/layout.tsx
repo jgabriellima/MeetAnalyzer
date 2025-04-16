@@ -4,7 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import CookieConsent from "@/components/Cookies";
 import { GoogleAnalytics } from '@next/third-parties/google'
 import { Toaster } from "@/components/ui/toaster"
-
+import LoadingProvider from "@/providers/loading/LoadingProvider";
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_PRODUCTNAME,
@@ -24,13 +24,15 @@ export default function RootLayout({
   return (
     <html lang="en">
     <body className={theme}>
-      {children}
+      <LoadingProvider>
+        {children}
+        <CookieConsent />
+        <Toaster />
+      </LoadingProvider>
       <Analytics />
-      <CookieConsent />
       { gaID && (
           <GoogleAnalytics gaId={gaID}/>
       )}
-      <Toaster />
     </body>
     </html>
   );

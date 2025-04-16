@@ -164,3 +164,11 @@ async def get_data(query: str) -> str:
 8. Maintain clear naming conventions for nodes and edges
 9. Regularly update and maintain indices
 10. Monitor and optimize query performance
+
+## Links and references and Documentation
+
+- https://help.getzep.com/graphiti/graphiti/overview
+
+- Documentation: https://help.getzep.com/concepts
+
+

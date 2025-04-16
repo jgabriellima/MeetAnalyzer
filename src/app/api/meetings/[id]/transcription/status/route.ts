@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerComponent } from '@/lib/supabase/server';
 import { TranscriptionServiceImpl } from '@/lib/transcription/service';
 import { AssemblyAIProvider } from '@/lib/transcription/providers/assemblyai';
 
@@ -12,11 +12,10 @@ export async function GET(
         const { id } = params;
 
         // Initialize services
-        const supabase = createClient();
-        const transcriptionService = new TranscriptionServiceImpl(supabase);
+        const supabase = await createServerComponent();
+        const transcriptionService = new TranscriptionServiceImpl();
         const assemblyAIProvider = new AssemblyAIProvider(
-            process.env.ASSEMBLYAI_API_KEY!,
-            supabase
+            process.env.ASSEMBLYAI_API_KEY || ''
         );
 
         // Register provider

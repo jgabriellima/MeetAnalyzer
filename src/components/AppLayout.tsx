@@ -29,24 +29,39 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     // Fetch subscription status when component mounts
     useEffect(() => {
+        let isMounted = true;
+        
         async function fetchSubscriptionStatus() {
             try {
                 const response = await fetch('/api/subscription/status');
+                if (!isMounted) return;
+                
                 if (response.ok) {
                     const data = await response.json();
                     setSubscriptionStatus({
-                        isActive: data.isActive,
-                        plan: data.plan
+                        isActive: data.isActive || false,
+                        plan: data.plan || null
                     });
+                } else {
+                    console.error('Error response from subscription API:', response.statusText);
+                    // Use defaults para evitar erros de UI
+                    setSubscriptionStatus({ isActive: false, plan: null });
                 }
             } catch (error) {
+                if (!isMounted) return;
                 console.error('Error fetching subscription status:', error);
+                // Use defaults para evitar erros de UI
+                setSubscriptionStatus({ isActive: false, plan: null });
             }
         }
 
         if (user) {
             fetchSubscriptionStatus();
         }
+        
+        return () => {
+            isMounted = false;
+        };
     }, [user]);
 
     const handleLogout = async () => {
@@ -61,11 +76,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         router.push('/app/user-settings')
     };
 
-    const getInitials = (email: string) => {
-        const parts = email.split('@')[0].split(/[._-]/);
-        return parts.length > 1
-            ? (parts[0][0] + parts[1][0]).toUpperCase()
-            : parts[0].slice(0, 2).toUpperCase();
+    const getInitials = (email: string | undefined) => {
+        if (!email) return '??';
+        
+        try {
+            const parts = email.split('@')[0].split(/[._-]/);
+            if (parts.length > 1 && parts[0] && parts[1]) {
+                // Verificar se existe pelo menos um caractere em cada parte
+                if (parts[0].length > 0 && parts[1].length > 0) {
+                    return (parts[0][0] + parts[1][0]).toUpperCase();
+                }
+            }
+            
+            // Fallback para as duas primeiras letras do email
+            return (parts[0] && parts[0].length > 0) 
+                ? parts[0].slice(0, 2).toUpperCase() 
+                : '??';
+        } catch (error) {
+            console.error('Error generating initials:', error);
+            return '??';
+        }
     };
 
     const productName = process.env.NEXT_PUBLIC_PRODUCTNAME;

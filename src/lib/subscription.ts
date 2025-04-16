@@ -8,6 +8,13 @@ export type SubscriptionStatus = {
   currentPeriodEnd: string | null;
 };
 
+// Interface para dados do usuário
+interface UserData {
+  stripe_subscription_id?: string | null;
+  subscription_status?: string | null;
+  subscription_plan?: string | null;
+}
+
 /**
  * Verifica o status da assinatura de um usuário
  */
@@ -15,7 +22,19 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
   try {
     // Obter cliente do Supabase
     const client = await createSSRSassClient();
-    const user = await client.getUser();
+    
+    let user;
+    try {
+      user = await client.getUser();
+    } catch (userError) {
+      console.error('Erro ao obter informações do usuário:', userError);
+      return {
+        isActive: false,
+        plan: null,
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: null,
+      };
+    }
     
     // Se não houver usuário autenticado, retornar sem assinatura
     if (!user) {
@@ -28,10 +47,48 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
     }
     
     // Buscar informações do usuário
-    const { data: userData } = await client.getSupabaseClient().from('accounts')
-      .select('stripe_subscription_id, subscription_status, subscription_plan')
-      .eq('id', user.id)
-      .single();
+    let userData: UserData | null = null;
+    try {
+      // Primeiro, vamos tentar buscar o registro existente
+      const { data, error } = await client.getSupabaseClient().from('accounts')
+        .select('stripe_subscription_id, subscription_status, subscription_plan')
+        .eq('user_id', user.id)
+        .maybeSingle(); // Usando maybeSingle em vez de single para não lançar erro se não existir
+      
+      // Se não houver erro mas também não houver dados, isso significa que o usuário não tem um registro na tabela accounts
+      if (!error && !data) {
+        console.log(`Usuário ${user.id} não tem registro na tabela accounts. Criando um registro padrão.`);
+        
+        // Vamos criar um registro padrão para o usuário
+        const { data: newAccountData, error: insertError } = await client.getSupabaseClient()
+          .from('accounts')
+          .insert({
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+            subscription_status: 'inactive',
+            subscription_plan: null,
+            stripe_subscription_id: null
+          })
+          .select('stripe_subscription_id, subscription_status, subscription_plan')
+          .single();
+          
+        if (insertError) {
+          console.error('Erro ao criar registro de conta para o usuário:', insertError);
+          // Continuar com dados nulos mesmo com erro
+        } else {
+          userData = newAccountData as UserData;
+          console.log('Registro criado com sucesso:', userData);
+        }
+      } else if (error) {
+        // Se houver outro tipo de erro na consulta, registramos o erro
+        console.error('Erro ao buscar dados de assinatura do banco:', error);
+      } else {
+        // Caso normal, dados encontrados
+        userData = data as UserData;
+      }
+    } catch (dbError) {
+      console.error('Erro inesperado ao interagir com o banco de dados:', dbError);
+    }
     
     // Se não houver dados ou assinatura, retornar sem assinatura
     if (!userData || !userData.stripe_subscription_id || userData.subscription_status !== 'active') {
@@ -44,15 +101,26 @@ export async function checkSubscriptionStatus(): Promise<SubscriptionStatus> {
     }
     
     // Se houver assinatura, obter detalhes da assinatura
-    const paymentProvider = PaymentProviderFactory.getProvider();
-    const subscription = await paymentProvider.getSubscription(userData.stripe_subscription_id);
-    
-    return {
-      isActive: subscription.status === 'active',
-      plan: subscription.plan,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-      currentPeriodEnd: subscription.currentPeriodEnd,
-    };
+    try {
+      const paymentProvider = PaymentProviderFactory.getProvider();
+      const subscription = await paymentProvider.getSubscription(userData.stripe_subscription_id);
+      
+      return {
+        isActive: subscription.status === 'active',
+        plan: subscription.plan,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+      };
+    } catch (stripeError) {
+      console.error('Erro ao verificar assinatura no Stripe:', stripeError);
+      // Retornar baseado nos dados do banco, mesmo sem confirmar com o Stripe
+      return {
+        isActive: userData.subscription_status === 'active',
+        plan: userData.subscription_plan || null,
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: null,
+      };
+    }
   } catch (error) {
     console.error('Erro ao verificar status da assinatura:', error);
     return {

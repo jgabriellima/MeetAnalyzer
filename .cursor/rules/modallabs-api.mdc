@@ -1,6 +1,7 @@
 ---
-title: Modal Labs - Complete API Use Guide
 description: A comprehensive guide for integrating and operating with Modal Labs for high-performance serverless computing, with focus on ML/AI workloads and batch processing.
+globs: 
+alwaysApply: false
 ---
 
 ```mermaid
@@ -941,9 +942,9 @@ Common error codes:
 # General
 
 For more detailed information, refer to:
-- [Modal Labs Documentation](https://modal.com/docs)
-- [API Reference](https://modal.com/docs/reference)
-- [Examples Repository](https://github.com/modal-labs/modal-examples)
+- [Modal Labs Documentation](mdc:https:/modal.com/docs)
+- [API Reference](mdc:https:/modal.com/docs/reference)
+- [Examples Repository](mdc:https:/github.com/modal-labs/modal-examples)
 
 ## 🌐 Web Endpoints & API Integration
 
